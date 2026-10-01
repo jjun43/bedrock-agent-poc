@@ -433,47 +433,66 @@ if page == "⚡ 실시간 수집":
                 st.error(f"❌ 오류 발생: {err}")
             else:
                 st.success("✅ Ingestion 완료! 다른 탭에서 결과를 확인하세요.")
-            st.markdown("""
-<div style='display:flex;flex-direction:column;gap:8px;margin-top:8px;'>
+            st.components.v1.html("""
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+body { background: transparent; }
+.card {
+  background: #1a1d23;
+  border: 1px solid #2c3235;
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  cursor: pointer;
+  transition: border-color .15s;
+  margin-bottom: 8px;
+  text-decoration: none;
+}
+.card:hover { border-color: #f46800; }
+.card-icon { font-size: 20px; flex-shrink: 0; }
+.card-title { color: #d8dee9; font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+.card-desc { color: #6c7a8a; font-size: 12px; line-height: 1.6; }
+.card-arrow { margin-left: auto; color: #f46800; font-size: 16px; align-self: center; flex-shrink: 0; }
+</style>
 
-  <div onclick="(function(){var labels=window.parent.document.querySelectorAll('[data-testid=stSidebar] label[data-baseweb=radio]');for(var l of labels){if(l.innerText.trim().startsWith('📋')){l.click();break;}}})()"
-    style='background:#1a1d23;border:1px solid #2c3235;border-radius:8px;padding:14px 18px;
-    display:flex;align-items:flex-start;gap:14px;cursor:pointer;transition:border-color .15s;'
-    onmouseover="this.style.borderColor='#f46800'" onmouseout="this.style.borderColor='#2c3235'">
-    <span style='font-size:20px;'>📋</span>
-    <div>
-      <div style='color:#d8dee9;font-size:14px;font-weight:600;margin-bottom:3px;'>문서 다이제스트</div>
-      <div style='color:#6c7a8a;font-size:12px;line-height:1.6;'>수집된 AWS 문서의 요약·키워드·버전 정보를 카드 형태로 확인합니다.</div>
-    </div>
-    <span style='margin-left:auto;color:#f46800;font-size:16px;align-self:center;'>→</span>
+<div class="card" onclick="nav('📋')">
+  <span class="card-icon">📋</span>
+  <div>
+    <div class="card-title">문서 다이제스트</div>
+    <div class="card-desc">수집된 AWS 문서의 요약·키워드·버전 정보를 카드 형태로 확인합니다.</div>
   </div>
-
-  <div onclick="(function(){var labels=window.parent.document.querySelectorAll('[data-testid=stSidebar] label[data-baseweb=radio]');for(var l of labels){if(l.innerText.trim().startsWith('🕸')){l.click();break;}}})()"
-    style='background:#1a1d23;border:1px solid #2c3235;border-radius:8px;padding:14px 18px;
-    display:flex;align-items:flex-start;gap:14px;cursor:pointer;transition:border-color .15s;'
-    onmouseover="this.style.borderColor='#f46800'" onmouseout="this.style.borderColor='#2c3235'">
-    <span style='font-size:20px;'>🕸️</span>
-    <div>
-      <div style='color:#d8dee9;font-size:14px;font-weight:600;margin-bottom:3px;'>지식 그래프</div>
-      <div style='color:#6c7a8a;font-size:12px;line-height:1.6;'>문서 간 유사도·버전 계승 관계를 NetworkX 그래프로 시각화합니다.</div>
-    </div>
-    <span style='margin-left:auto;color:#f46800;font-size:16px;align-self:center;'>→</span>
-  </div>
-
-  <div onclick="(function(){var labels=window.parent.document.querySelectorAll('[data-testid=stSidebar] label[data-baseweb=radio]');for(var l of labels){if(l.innerText.trim().startsWith('💬')){l.click();break;}}})()"
-    style='background:#1a1d23;border:1px solid #2c3235;border-radius:8px;padding:14px 18px;
-    display:flex;align-items:flex-start;gap:14px;cursor:pointer;transition:border-color .15s;'
-    onmouseover="this.style.borderColor='#f46800'" onmouseout="this.style.borderColor='#2c3235'">
-    <span style='font-size:20px;'>💬</span>
-    <div>
-      <div style='color:#d8dee9;font-size:14px;font-weight:600;margin-bottom:3px;'>Q&amp;A</div>
-      <div style='color:#6c7a8a;font-size:12px;line-height:1.6;'>FAISS + Graph RAG 기반 하이브리드 검색으로 AWS 문서에 질문합니다.</div>
-    </div>
-    <span style='margin-left:auto;color:#f46800;font-size:16px;align-self:center;'>→</span>
-  </div>
-
+  <span class="card-arrow">→</span>
 </div>
-""", unsafe_allow_html=True)
+
+<div class="card" onclick="nav('🕸')">
+  <span class="card-icon">🕸️</span>
+  <div>
+    <div class="card-title">지식 그래프</div>
+    <div class="card-desc">문서 간 유사도·버전 계승 관계를 NetworkX 그래프로 시각화합니다.</div>
+  </div>
+  <span class="card-arrow">→</span>
+</div>
+
+<div class="card" onclick="nav('💬')">
+  <span class="card-icon">💬</span>
+  <div>
+    <div class="card-title">Q&amp;A</div>
+    <div class="card-desc">FAISS + Graph RAG 기반 하이브리드 검색으로 AWS 문서에 질문합니다.</div>
+  </div>
+  <span class="card-arrow">→</span>
+</div>
+
+<script>
+function nav(prefix) {
+  var labels = window.parent.document.querySelectorAll('[data-testid="stSidebar"] label');
+  for (var l of labels) {
+    if (l.innerText.trim().startsWith(prefix)) { l.click(); return; }
+  }
+}
+</script>
+""", height=270, scrolling=False)
             st.markdown("")
             if st.button("🔄 다시 실행", type="secondary", use_container_width=True):
                 st.session_state.t4_started = False

@@ -24,12 +24,8 @@ steps:
         - url: "https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html"
           label: "bedrock-models-v2"
         # Strands Agents SDK (Bedrock Agents 기반)
-        - url: "https://strandsagents.com/latest/documentation/docs/get-started/quick-start/"
-          label: "strands-quickstart-v1"
         - url: "https://strandsagents.com/latest/documentation/docs/concepts/agents/"
           label: "strands-agents-v1"
-        - url: "https://strandsagents.com/latest/documentation/docs/concepts/tools/"
-          label: "strands-tools-v1"
 
   - id: extract_metadata
     name: 메타데이터 추출
