@@ -1,3 +1,14 @@
+---
+title: AWS Tutorial Dedup POC
+emoji: 🤖
+colorFrom: blue
+colorTo: indigo
+sdk: streamlit
+sdk_version: "1.35.0"
+app_file: portal/app.py
+pinned: false
+---
+
 # AWS Tutorial Dedup POC
 
 **AWS ProServe Senior AI Application Architect L6 지원용 Bedrock PoC**
@@ -56,7 +67,7 @@ Answer + Sources + Pyvis Graph
 | **Harness Engineering** | task.yaml 기반 문서 주도 파이프라인 |
 | **Safety** | Amazon Bedrock Guardrails |
 | **Storage** | Amazon S3 (ap-southeast-2) |
-| **Frontend** | Streamlit Community Cloud + Pyvis |
+| **Frontend** | Streamlit + Pyvis |
 | **Evaluation** | Bedrock LLM-as-Judge (Faithfulness / Relevancy / Recall) |
 
 ---
@@ -66,80 +77,32 @@ Answer + Sources + Pyvis Graph
 ```
 bedrock-agent-poc/
 ├── ingestion/
-│   ├── task.yaml          # Harness: 태스크 문서 정의 (Agent가 S3에서 읽어 실행)
-│   ├── web_fetch.py       # MCP web_fetch 도구 (@tool 데코레이터)
+│   ├── task.yaml          # Harness: 태스크 문서 정의
+│   ├── web_fetch.py       # MCP web_fetch 도구 (@tool)
 │   ├── agent.py           # Ingestion Agent (Strands + FAISS + NetworkX)
 │   └── run_ingestion.py   # 1회 실행 스크립트
 ├── query/
 │   ├── retriever.py       # FAISS + Graph BFS 하이브리드 검색
 │   └── agent.py           # Query Agent (Bedrock Guardrails 포함)
 ├── portal/
-│   └── app.py             # Streamlit 포털 (다이제스트 + 그래프 + Q&A)
+│   └── app.py             # Streamlit 포털
 ├── evals/
 │   └── eval.py            # Bedrock LLM-as-Judge 평가
-├── .env                   # 환경변수 (git 제외)
-├── .env.example           # 환경변수 템플릿
-├── requirements.txt       # 의존성
+├── .env.example
+├── requirements.txt
 └── README.md
 ```
 
 ---
 
-## 🚀 실행 방법
+## 🚀 로컬 실행
 
-### 1. 환경 설정
 ```bash
-cp .env.example .env
-# .env에 AWS 자격증명 입력
-```
-
-### 2. 패키지 설치
-```bash
+cp .env.example .env  # AWS 자격증명 입력
 /opt/anaconda3/bin/python -m pip install -r requirements.txt
+cd ingestion && python run_ingestion.py   # 1회 데이터 수집
+cd ../portal && streamlit run app.py      # 포털 실행
 ```
-
-### 3. Ingestion (1회)
-```bash
-cd ingestion
-/opt/anaconda3/bin/python run_ingestion.py
-```
-
-### 4. Streamlit 포털 실행
-```bash
-cd portal
-/opt/anaconda3/bin/python -m streamlit run app.py
-```
-
----
-
-## ✅ Phase 체크리스트
-
-### Phase 0 — AWS 인프라 설정 ✅
-- [x] AWS 계정 로그인 (Ready Set Build, $140 크레딧)
-- [x] S3 버킷 생성 (`bedrock-agent-poc-jjun43`, ap-southeast-2)
-- [x] IAM 사용자 (`js43.lee`) + S3/Bedrock 권한
-- [x] Bedrock 모델 확인 (Claude Sonnet 4.6 서버리스)
-
-### Phase 1 — Ingestion Pipeline ✅
-- [x] `task.yaml` Harness 문서
-- [x] `web_fetch.py` MCP 도구
-- [x] `agent.py` Strands 기반 인제스천 에이전트
-- [x] FAISS 인덱스 + NetworkX 그래프 → S3
-
-### Phase 2 — Query Agent ✅
-- [x] FAISS 벡터 검색
-- [x] Graph BFS 확장 (하이브리드 RAG)
-- [x] Bedrock Guardrails 연동
-
-### Phase 3 — Streamlit 포털 ✅
-- [x] 최신 버전 다이제스트 카드
-- [x] Pyvis 인터랙티브 그래프
-- [x] Q&A 탭 (하이브리드 RAG)
-
-### Phase 4 — 평가 & 마무리 ✅
-- [x] Bedrock LLM-as-Judge (Faithfulness / Relevancy / Recall)
-- [ ] Streamlit Community Cloud 배포
-- [ ] Bedrock Evaluation 결과 README 추가
 
 ---
 
@@ -147,9 +110,9 @@ cd portal
 
 | 서비스 | 예상 비용 |
 |--------|-----------|
-| Claude Sonnet 4.6 (인제스천 + 쿼리 테스트) | ~$0.50 |
+| Claude Sonnet 4.6 | ~$0.50 |
 | Titan Embed V2 | ~$0.10 |
-| S3 (< 1MB) | ~$0.00 |
+| S3 | ~$0.00 |
 | **합계** | **~$0.60** |
 
 Ready Set Build $140 크레딧으로 충분히 커버됩니다.
@@ -158,6 +121,6 @@ Ready Set Build $140 크레딧으로 충분히 커버됩니다.
 
 ## 📍 AWS 설정
 
-- **리전**: ap-southeast-2 (시드니) — Ready Set Build 무료 플랜 지원 리전
-- **모델**: `anthropic.claude-sonnet-4-6-20250514-v1:0` (AU 추론 프로파일)
+- **리전**: ap-southeast-2 (시드니)
+- **모델**: `anthropic.claude-sonnet-4-6-20250514-v1:0`
 - **버킷**: `bedrock-agent-poc-jjun43`
