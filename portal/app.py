@@ -68,36 +68,46 @@ PIPELINE_STEPS = [
 ]
 
 def _render_steps(placeholder, current: int):
-    """타임라인 진행 바 (current=-1: 대기, 0~4: 진행중, 5: 완료)"""
+    """타임라인 + 로딩바 (current=-1: 대기, 0~4: 진행중, 5: 완료)"""
     COLORS = ["#14b8a6", "#8b5cf6", "#3b82f6", "#10b981", "#f59e0b"]
     total = len(PIPELINE_STEPS)
 
-    # 진행선 너비 %
-    if current <= 0:
+    # 진행선 / 로딩바 너비 %
+    if current < 0:
         fill = 0.0
     elif current >= total:
         fill = 100.0
     else:
         fill = current / (total - 1) * 100.0
 
-    # 그라디언트 (완료 색상만)
-    done = COLORS[: max(1, min(current, total))]
+    # 그라디언트 색상
+    done = COLORS[: max(1, min(current + 1, total))]
     gradient = f"linear-gradient(90deg, {', '.join(done)})"
+    glow_color = done[-1]
 
+    # 로딩 텍스트
+    if current < 0:
+        bar_label = "대기 중..."
+    elif current >= total:
+        bar_label = "✅&nbsp; COMPLETE"
+    else:
+        bar_label = f"LOADING...&nbsp;&nbsp;{PIPELINE_STEPS[current]}"
+
+    # 타임라인 노드
     nodes = ""
     for i, name in enumerate(PIPELINE_STEPS):
         c = COLORS[i]
-        pos = i / (total - 1) * 100  # 수평 위치 %
-        if current == -1 or i > current:          # 대기
+        pos = i / (total - 1) * 100
+        if current < 0 or i > current:            # 대기
             dot = (f"width:14px;height:14px;border:2px solid #4b5563;"
                    f"background:#1e2130;border-radius:50%;margin-top:1px;")
             lc, lw = "#4b5563", "400"
-        elif i == current:                         # 진행중 (링 + 글로우)
+        elif i == current:                         # 진행중
             dot = (f"width:18px;height:18px;border:3px solid {c};"
                    f"background:#1e2130;border-radius:50%;margin-top:-1px;"
                    f"box-shadow:0 0 0 4px {c}33;")
             lc, lw = c, "700"
-        else:                                      # 완료 (채움)
+        else:                                      # 완료
             dot = f"width:16px;height:16px;background:{c};border-radius:50%;"
             lc, lw = c, "600"
 
@@ -112,16 +122,28 @@ def _render_steps(placeholder, current: int):
         )
 
     html = (
-        "<div style='position:relative;padding:4px 3%;margin:10px 0 18px;'>"
+        "<div style='padding:4px 3%;margin:10px 0 4px;'>"
+        # ── 타임라인 ──
         "<div style='position:relative;height:58px;'>"
-        # 배경선
         "<div style='position:absolute;top:44px;left:0;right:0;height:2px;"
         "background:#2d3748;border-radius:1px;'></div>"
-        # 진행선
         f"<div style='position:absolute;top:44px;left:0;width:{fill:.1f}%;height:2px;"
         f"background:{gradient};border-radius:1px;transition:width .4s ease;'></div>"
         + nodes +
-        "</div></div>"
+        "</div>"
+        # ── 로딩 바 ──
+        "<div style='margin-top:18px;'>"
+        "<div style='position:relative;height:32px;background:#2d3748;"
+        "border-radius:8px;overflow:hidden;'>"
+        f"<div style='position:absolute;inset:0 auto 0 0;width:{fill:.1f}%;"
+        f"background:{gradient};border-radius:8px;"
+        f"box-shadow:0 0 18px {glow_color}88;"
+        "transition:width .5s ease;'></div>"
+        "</div>"
+        f"<div style='margin-top:8px;text-align:center;font-size:12px;"
+        f"font-weight:700;letter-spacing:2px;color:#94a3b8;'>{bar_label}</div>"
+        "</div>"
+        "</div>"
     )
     placeholder.markdown(html, unsafe_allow_html=True)
 
@@ -367,10 +389,14 @@ with tab4:
                 except Exception as e:
                     st.error(f"오류: {e}")
     else:
-        st.info("이미 수집이 완료되었습니다.")
-        if st.button("🔄 다시 실행", type="secondary"):
-            st.session_state.t4_started = False
-            st.rerun()
+        # 완료 상태: 타임라인 + 로딩바를 COMPLETE 상태로 표시 (빈 화면 방지)
+        _render_steps(prog_placeholder, 5)
+        with log_placeholder.container():
+            st.success("✅ Ingestion 완료! '문서 다이제스트' 탭에서 결과를 확인하세요.")
+            st.markdown("")
+            if st.button("🔄 다시 실행", type="secondary", use_container_width=True):
+                st.session_state.t4_started = False
+                st.rerun()
 
 st.divider()
 st.caption("Built with Amazon Bedrock · Strands Agents · FAISS · NetworkX · Streamlit")
