@@ -1,0 +1,20 @@
+# 환경변수 (절대 커밋 금지!)
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# 로컬 임시 파일
+*.bin
+*.pkl
+*.log
+.DS_Store
+
+# IDE
+.idea/
+.vscode/

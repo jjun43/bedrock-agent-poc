@@ -1,0 +1,69 @@
+# Harness Engineering: 문서 기반 태스크 정의
+# Agent가 이 YAML을 S3에서 읽어 실행 파이프라인을 구성함
+
+task:
+  name: aws-tutorial-dedup-ingestion
+  description: AWS 튜토리얼 문서 수집 → 중복 제거 → 최신 버전 정리
+  version: "1.0"
+
+steps:
+  - id: fetch_docs
+    name: 문서 수집
+    tool: fetch_aws_doc
+    inputs:
+      urls:
+        - url: "https://docs.aws.amazon.com/bedrock/latest/userguide/what-is-bedrock.html"
+          label: "bedrock-intro-v2"
+        - url: "https://docs.aws.amazon.com/bedrock/latest/userguide/agents.html"
+          label: "bedrock-agents-v2"
+        - url: "https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base.html"
+          label: "bedrock-kb-v2"
+        - url: "https://strandsagents.com/latest/documentation/docs/get-started/quick-start/"
+          label: "strands-quickstart-v1"
+
+  - id: extract_metadata
+    name: 메타데이터 추출
+    tool: extract_metadata_with_llm
+    depends_on: fetch_docs
+    config:
+      model_id: "${BEDROCK_MODEL_ID}"
+      extract_fields:
+        - service_name
+        - api_version
+        - publish_date
+        - keywords
+        - supersedes
+
+  - id: build_index
+    name: 벡터 인덱스 빌드
+    tool: build_faiss_index
+    depends_on: extract_metadata
+    config:
+      embed_model_id: "${BEDROCK_EMBED_MODEL_ID}"
+      similarity_threshold: 0.85
+      chunk_size: 512
+      chunk_overlap: 64
+
+  - id: build_graph
+    name: 관계 그래프 빌드
+    tool: build_knowledge_graph
+    depends_on: extract_metadata
+    config:
+      edge_types:
+        - supersedes
+        - similar_to
+        - uses
+
+  - id: save_to_s3
+    name: S3 저장
+    tool: save_artifacts
+    depends_on:
+      - build_index
+      - build_graph
+    config:
+      bucket: "${S3_BUCKET}"
+      paths:
+        raw_docs: "raw_docs/"
+        faiss_index: "faiss_index.bin"
+        graph: "graph.json"
+        metadata: "metadata.json"
