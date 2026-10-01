@@ -293,81 +293,93 @@ def run_live_ingestion(prog_placeholder, log_area):
     return True
 
 
-# ── UI ───────────────────────────────────────────────────────────────
-st.title("🤖 AWS Tutorial Dedup POC")
-st.caption("Bedrock + FAISS + Graph RAG")
+# ── Grafana CSS ──────────────────────────────────────────────────────────
+st.markdown("""
+<style>
+[data-testid="stAppViewContainer"] > .main { background:#111217; }
+[data-testid="stSidebar"] { background:#181b1f !important; border-right:1px solid #2c3235; }
+[data-testid="stSidebar"] > div:first-child { padding-top:0; }
 
-tab4, tab1, tab2, tab3 = st.tabs(["⚡ 실시간 수집", "📋 문서 다이제스트", "🕸️ 지식 그래프", "💬 Q&A"])
+.gf-logo { padding:20px 16px 12px; border-bottom:1px solid #2c3235; margin-bottom:8px; }
+.gf-logo-title { font-size:15px;font-weight:700;color:#f46800;letter-spacing:0.02em; }
+.gf-logo-sub { font-size:11px;color:#6c7a8a;margin-top:2px; }
 
-# ── Tab 1: 다이제스트 ─────────────────────────────────────────────────
-with tab1:
-    st.subheader("최신 버전 AWS 튜토리얼 다이제스트")
-    if st.button("🔄 새로고침"):
-        st.cache_data.clear()
-    metadata, _ = load_data()
-    if metadata:
-        cols = st.columns(2)
-        for i, doc in enumerate(metadata):
-            meta = doc.get("metadata", {})
-            with cols[i % 2]:
-                with st.container(border=True):
-                    st.markdown(f"**{doc['label']}**")
-                    st.caption(doc.get("url", ""))
-                    st.write(meta.get("summary", "요약 없음"))
-                    kws = meta.get("keywords", [])
-                    if kws:
-                        st.markdown(" ".join(f"`{k}`" for k in kws))
-    else:
-        st.info("아직 데이터가 없습니다.")
+[data-testid="stSidebar"] [role="radiogroup"] { gap:2px !important; }
+[data-testid="stSidebar"] label[data-baseweb="radio"] {
+    background:transparent;border-radius:4px;padding:8px 16px;
+    cursor:pointer;transition:background .15s;width:100%;font-size:14px;
+}
+[data-testid="stSidebar"] label[data-baseweb="radio"],
+[data-testid="stSidebar"] label[data-baseweb="radio"] *,
+[data-testid="stSidebar"] [role="radiogroup"] p,
+[data-testid="stSidebar"] [role="radiogroup"] span,
+[data-testid="stSidebar"] [role="radiogroup"] div {
+    color:#ffffff !important;
+}
+[data-testid="stSidebar"] label[data-baseweb="radio"]:hover { background:#2c3235; }
+[data-testid="stSidebar"] label[data-baseweb="radio"][aria-checked="true"],
+[data-testid="stSidebar"] label[data-baseweb="radio"][aria-checked="true"] * {
+    background:rgba(244,104,0,0.15);border-left:3px solid #f46800;
+    color:#f46800 !important;font-weight:700;
+}
 
-# ── Tab 2: 그래프 ────────────────────────────────────────────────────
-with tab2:
-    st.subheader("문서 관계 그래프")
-    _, graph_data = load_data()
-    if graph_data and graph_data.get("nodes"):
-        html = render_graph(graph_data)
-        st.components.v1.html(html, height=480)
-        G = nx.node_link_graph(graph_data, edges="links")
-        c1, c2, c3 = st.columns(3)
-        c1.metric("노드", G.number_of_nodes())
-        c2.metric("엣지", G.number_of_edges())
-        c3.metric("연결 요소", nx.number_weakly_connected_components(G))
-    else:
-        st.info("그래프 데이터가 없습니다.")
+.gf-page-header { border-bottom:1px solid #2c3235; padding:16px 0 14px; margin-bottom:20px; }
+.gf-page-title { font-size:22px;font-weight:700;color:#d8dee9; }
+.gf-page-sub { font-size:13px;color:#6c7a8a;margin-top:3px; }
+.gf-page-sub2 { font-size:12px;color:#4a5568;margin-top:3px; }
 
-# ── Tab 3: Q&A ───────────────────────────────────────────────────────
-with tab3:
-    st.subheader("AWS 문서 Q&A (하이브리드 RAG)")
-    query = st.text_input("질문 입력", placeholder="예: Bedrock Agent를 설정하는 방법은?")
-    if st.button("🔍 검색", type="primary") and query:
-        with st.spinner("검색 중..."):
-            try:
-                from agent import answer
-                result = answer(query)
-                st.markdown("### 💬 답변")
-                st.write(result["answer"])
-                if result.get("sources"):
-                    st.markdown("### 📚 참고 문서")
-                    for src in result["sources"]:
-                        score = src.get('score', 0)
-                        st.markdown(f"- [{src['label']}]({src['url']})  `{score:.3f}`")
-            except Exception as e:
-                st.error(f"오류: {e}")
+[data-testid="stMetricValue"] { color:#f46800 !important; }
+.stButton > button[kind="primary"] { background:#f46800 !important;border:none;color:#fff !important; }
+.stButton > button[kind="primary"]:hover { background:#d45a00 !important; }
 
-# ── Tab 4: 실시간 수집 ────────────────────────────────────────────────
-with tab4:
+.gf-sidebar-footer {
+    margin-top:32px;padding-top:12px;border-top:1px solid #2c3235;
+    font-size:11px;color:#4a5568;line-height:1.6;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ── Sidebar ───────────────────────────────────────────────────────────────
+with st.sidebar:
+    st.markdown("""
+<div class="gf-logo">
+  <div class="gf-logo-title">🤖 AWS Dedup POC</div>
+  <div class="gf-logo-sub">Bedrock · FAISS · Graph RAG</div>
+</div>
+""", unsafe_allow_html=True)
+
+    page = st.radio(
+        "navigation",
+        ["⚡ 실시간 수집", "📋 문서 다이제스트", "🕸️ 지식 그래프", "💬 Q&A"],
+        key="nav_page",
+        label_visibility="collapsed",
+    )
+
+    st.markdown("""
+<div class="gf-sidebar-footer">
+  Amazon Bedrock<br>Strands Agents · FAISS · NetworkX
+</div>
+""", unsafe_allow_html=True)
+
+# ── Page header ───────────────────────────────────────────────────────────
+st.markdown("""
+<div class="gf-page-header">
+  <div class="gf-page-title">🤖 AWS Tutorial Dedup POC</div>
+  <div class="gf-page-sub">Bedrock + FAISS + Graph RAG</div>
+  <div class="gf-page-sub2">Claude Sonnet 4.6 · Titan Embed v2 · Strands Agents SDK · NetworkX · FAISS</div>
+</div>
+""", unsafe_allow_html=True)
+
+# ── Page routing ──────────────────────────────────────────────────────────
+if page == "⚡ 실시간 수집":
     prog_placeholder = st.empty()
     log_placeholder = st.empty()
 
     if not st.session_state.get("t4_started"):
-        # 대기 상태 진행 바 먼저 표시
         _render_steps(prog_placeholder, -1)
-
         with log_placeholder.container():
             st.markdown("## ⚡ 실시간 Ingestion 파이프라인")
-            st.markdown(
-                "버튼을 누르면 위 파이프라인이 단계별로 진행되며 실시간 상태가 표시됩니다."
-            )
+            st.markdown("버튼을 누르면 위 파이프라인이 단계별로 진행되며 실시간 상태가 표시됩니다.")
             st.markdown("**수집 대상 문서**")
             import yaml as _yaml
             _task_path = Path(__file__).parent.parent / "ingestion" / "task.yaml"
@@ -389,9 +401,8 @@ with tab4:
                 except Exception as e:
                     st.session_state.t4_error = str(e)
                 finally:
-                    st.rerun()  # 완료 후 명시적 rerun → else 브랜치에서 완료 화면 표시
+                    st.rerun()
     else:
-        # 완료 상태: 타임라인 + 로딩바를 COMPLETE 상태로 표시
         _render_steps(prog_placeholder, 5)
         with log_placeholder.container():
             err = st.session_state.get("t4_error")
@@ -412,5 +423,54 @@ with tab4:
                     st.cache_data.clear()
                     st.rerun()
 
-st.divider()
-st.caption("Built with Amazon Bedrock · Strands Agents · FAISS · NetworkX · Streamlit")
+elif page == "📋 문서 다이제스트":
+    st.subheader("최신 버전 AWS 튜토리얼 다이제스트")
+    if st.button("🔄 새로고침"):
+        st.cache_data.clear()
+    metadata, _ = load_data()
+    if metadata:
+        cols = st.columns(2)
+        for i, doc in enumerate(metadata):
+            meta = doc.get("metadata", {})
+            with cols[i % 2]:
+                with st.container(border=True):
+                    st.markdown(f"**{doc['label']}**")
+                    st.caption(doc.get("url", ""))
+                    st.write(meta.get("summary", "요약 없음"))
+                    kws = meta.get("keywords", [])
+                    if kws:
+                        st.markdown(" ".join(f"`{k}`" for k in kws))
+    else:
+        st.info("아직 데이터가 없습니다.")
+
+elif page == "🕸️ 지식 그래프":
+    st.subheader("문서 관계 그래프")
+    _, graph_data = load_data()
+    if graph_data and graph_data.get("nodes"):
+        html = render_graph(graph_data)
+        st.components.v1.html(html, height=480)
+        G = nx.node_link_graph(graph_data, edges="links")
+        c1, c2, c3 = st.columns(3)
+        c1.metric("노드", G.number_of_nodes())
+        c2.metric("엣지", G.number_of_edges())
+        c3.metric("연결 요소", nx.number_weakly_connected_components(G))
+    else:
+        st.info("그래프 데이터가 없습니다.")
+
+elif page == "💬 Q&A":
+    st.subheader("AWS 문서 Q&A (하이브리드 RAG)")
+    query = st.text_input("질문 입력", placeholder="예: Bedrock Agent를 설정하는 방법은?")
+    if st.button("🔍 검색", type="primary") and query:
+        with st.spinner("검색 중..."):
+            try:
+                from agent import answer
+                result = answer(query)
+                st.markdown("### 💬 답변")
+                st.write(result["answer"])
+                if result.get("sources"):
+                    st.markdown("### 📚 참고 문서")
+                    for src in result["sources"]:
+                        score = src.get('score', 0)
+                        st.markdown(f"- [{src['label']}]({src['url']})  `{score:.3f}`")
+            except Exception as e:
+                st.error(f"오류: {e}")
