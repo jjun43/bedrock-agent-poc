@@ -141,7 +141,7 @@ def _render_steps(placeholder, current: int):
         "transition:width .5s ease;'></div>"
         "</div>"
         f"<div style='margin-top:8px;text-align:center;font-size:12px;"
-        f"font-weight:700;letter-spacing:2px;color:#94a3b8;'>{bar_label}</div>"
+        f"font-size:22px;font-weight:800;letter-spacing:3px;color:#cbd5e1;'>{bar_label}</div>"
         "</div>"
         "</div>"
     )
@@ -357,12 +357,29 @@ with tab3:
 # ── Tab 4: 실시간 수집 ────────────────────────────────────────────────
 with tab4:
     prog_placeholder = st.empty()
-    log_placeholder = st.empty()
+    btn_placeholder  = st.empty()
+    log_placeholder  = st.empty()
 
     if not st.session_state.get("t4_started"):
         # 대기 상태 진행 바 먼저 표시
         _render_steps(prog_placeholder, -1)
 
+        # 버튼 — 로딩바 바로 아래
+        with btn_placeholder.container():
+            if st.button("🚀 실시간 수집 시작", type="primary", use_container_width=True):
+                st.session_state.t4_started = True
+                st.session_state.t4_error = None
+                btn_placeholder.empty()
+                log_placeholder.empty()
+                try:
+                    run_live_ingestion(prog_placeholder, log_placeholder)
+                    st.session_state.t4_done = True
+                except Exception as e:
+                    st.session_state.t4_error = str(e)
+                finally:
+                    st.rerun()
+
+        # 설명 + 문서 목록
         with log_placeholder.container():
             st.markdown("## ⚡ 실시간 Ingestion 파이프라인")
             st.markdown(
@@ -378,18 +395,6 @@ with tab4:
                     st.markdown(f"- `{_item['label']}` — {_item['url']}")
             except Exception:
                 pass
-            st.markdown("")
-            if st.button("🚀 실시간 수집 시작", type="primary", use_container_width=True):
-                st.session_state.t4_started = True
-                st.session_state.t4_error = None
-                log_placeholder.empty()
-                try:
-                    run_live_ingestion(prog_placeholder, log_placeholder)
-                    st.session_state.t4_done = True
-                except Exception as e:
-                    st.session_state.t4_error = str(e)
-                finally:
-                    st.rerun()
     else:
         # 완료 상태: COMPLETE 화면 표시
         _render_steps(prog_placeholder, 5)
