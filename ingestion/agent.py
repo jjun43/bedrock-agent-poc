@@ -107,7 +107,7 @@ def run_ingestion():
     index.add(emb_array)
     
     # 유사도 검색으로 중복 후보 탐지
-    D, I = index.search(emb_array, k=min(3, len(embeddings)))
+    D, I = index.search(emb_array, k=len(embeddings))
     
     # Step 4: 그래프 빌드
     print("  🕸️ 지식 그래프 빌드 중...")
@@ -117,7 +117,7 @@ def run_ingestion():
     
     for i, (distances, indices) in enumerate(zip(D, I)):
         for dist, j in zip(distances, indices):
-            if i != j and dist >= 0.75:
+            if i != j and dist >= 0.50:
                 G.add_edge(
                     enriched_docs[i]["label"],
                     enriched_docs[j]["label"],
