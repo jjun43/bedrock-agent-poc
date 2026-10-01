@@ -381,22 +381,36 @@ with tab4:
             st.markdown("")
             if st.button("🚀 실시간 수집 시작", type="primary", use_container_width=True):
                 st.session_state.t4_started = True
+                st.session_state.t4_error = None
                 log_placeholder.empty()
                 try:
                     run_live_ingestion(prog_placeholder, log_placeholder)
-                    st.success("✅ 완료! '문서 다이제스트' 탭에서 결과를 확인하세요.")
-                    st.cache_data.clear()
+                    st.session_state.t4_done = True
                 except Exception as e:
-                    st.error(f"오류: {e}")
+                    st.session_state.t4_error = str(e)
+                finally:
+                    st.rerun()
     else:
-        # 완료 상태: 타임라인 + 로딩바를 COMPLETE 상태로 표시 (빈 화면 방지)
+        # 완료 상태: COMPLETE 화면 표시
         _render_steps(prog_placeholder, 5)
         with log_placeholder.container():
-            st.success("✅ Ingestion 완료! '문서 다이제스트' 탭에서 결과를 확인하세요.")
+            err = st.session_state.get("t4_error")
+            if err:
+                st.error(f"❌ 오류: {err}")
+            else:
+                st.success("✅ Ingestion 완료! 다른 탭에서 결과를 확인하세요.")
             st.markdown("")
-            if st.button("🔄 다시 실행", type="secondary", use_container_width=True):
-                st.session_state.t4_started = False
-                st.rerun()
+            c1, c2 = st.columns(2)
+            with c1:
+                if st.button("🔄 다시 실행", type="secondary", use_container_width=True):
+                    st.session_state.t4_started = False
+                    st.session_state.t4_done = False
+                    st.session_state.t4_error = None
+                    st.rerun()
+            with c2:
+                if st.button("📋 다이제스트 새로고침", type="secondary", use_container_width=True):
+                    st.cache_data.clear()
+                    st.rerun()
 
 st.divider()
 st.caption("Built with Amazon Bedrock · Strands Agents · FAISS · NetworkX · Streamlit")
