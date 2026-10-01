@@ -269,7 +269,7 @@ def run_live_ingestion(prog_placeholder, log_area):
     _render_steps(prog_placeholder, 3)
     log("\n**[Step 4] NetworkX** — 지식 그래프 빌드...")
     G = nx.DiGraph()
-    threshold = task.get("config", {}).get("dedup_threshold", 0.85)
+    threshold = 0.45  # 코사인 유사도 임계값 (0.85 → 0.45)
     for doc in enriched:
         G.add_node(doc["label"], url=doc["url"], summary=doc["metadata"].get("summary", ""))
     edge_count = 0
