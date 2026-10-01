@@ -123,6 +123,7 @@ def _render_steps(placeholder, current: int):
 
     html = (
         "<div style='padding:4px 3%;margin:10px 0 4px;'>"
+        "<div style='font-size:11px;font-weight:700;letter-spacing:4px;color:#475569;margin-bottom:10px;'>⚡ INGEST PROGRESS</div>"
         # ── 타임라인 ──
         "<div style='position:relative;height:58px;'>"
         "<div style='position:absolute;top:44px;left:0;right:0;height:2px;"
