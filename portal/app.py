@@ -57,7 +57,7 @@ def render_graph(graph_data: dict) -> str:
     from pyvis.network import Network
     import tempfile
 
-    G = nx.node_link_graph(graph_data)
+    G = nx.node_link_graph(graph_data, edges="links")
     net = Network(height="450px", width="100%", bgcolor="#1a1a2e", font_color="#eee")
 
     for node, attrs in G.nodes(data=True):
@@ -114,7 +114,7 @@ with tab2:
         html = render_graph(graph_data)
         st.components.v1.html(html, height=480)
 
-        G = nx.node_link_graph(graph_data)
+        G = nx.node_link_graph(graph_data, edges="links")
         c1, c2, c3 = st.columns(3)
         c1.metric("노드", G.number_of_nodes())
         c2.metric("엣지", G.number_of_edges())
