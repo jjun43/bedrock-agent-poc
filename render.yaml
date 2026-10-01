@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: bedrock-agent-poc
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: streamlit run portal/app.py --server.port $PORT --server.address 0.0.0.0 --server.headless true
+    envVars:
+      - key: AWS_DEFAULT_REGION
+        value: ap-southeast-2
+      - key: S3_BUCKET
+        value: bedrock-agent-poc-jjun43
+      - key: BEDROCK_MODEL_ID
+        value: anthropic.claude-sonnet-4-6-20250514-v1:0
+      - key: BEDROCK_EMBED_MODEL_ID
+        value: amazon.titan-embed-text-v2:0
+      - key: AWS_ACCESS_KEY_ID
+        sync: false   # Render 대시보드에서 직접 입력
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false   # Render 대시보드에서 직접 입력
