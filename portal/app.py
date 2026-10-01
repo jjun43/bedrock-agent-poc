@@ -61,9 +61,16 @@ def render_graph(graph_data: dict) -> str:
   "interaction": { "zoomView": true, "dragView": true }
 }
 """)
-    for node, attrs in G.nodes(data=True):
+    import math
+    nodes_list = list(G.nodes(data=True))
+    n = max(len(nodes_list), 1)
+    for i, (node, attrs) in enumerate(nodes_list):
+        angle = 2 * math.pi * i / n
+        init_x = round(math.cos(angle) * 280, 1)
+        init_y = round(math.sin(angle) * 280, 1)
         color = "#4e8cff" if "bedrock" in node else "#ff6b6b"
-        net.add_node(node, label=node, color=color, size=20, title=attrs.get("summary", node))
+        net.add_node(node, label=node, color=color, size=20,
+                     title=attrs.get("summary", node), x=init_x, y=init_y)
     for u, v, data in G.edges(data=True):
         relation = data.get("relation", "related")
         color = "#ffd166" if relation == "supersedes" else "#95e1d3"
