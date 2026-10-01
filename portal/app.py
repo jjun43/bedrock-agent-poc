@@ -297,7 +297,7 @@ def run_live_ingestion(prog_placeholder, log_area):
 st.title("🤖 AWS Tutorial Dedup POC")
 st.caption("Bedrock + FAISS + Graph RAG  ·  AWS ProServe Senior AI Application Architect L6")
 
-tab1, tab2, tab3, tab4 = st.tabs(["📋 문서 다이제스트", "🕸️ 지식 그래프", "💬 Q&A", "⚡ 실시간 수집"])
+tab4, tab1, tab2, tab3 = st.tabs(["⚡ 실시간 수집", "📋 문서 다이제스트", "🕸️ 지식 그래프", "💬 Q&A"])
 
 # ── Tab 1: 다이제스트 ─────────────────────────────────────────────────
 with tab1:
