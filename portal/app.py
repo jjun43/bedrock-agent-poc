@@ -338,7 +338,7 @@ with tab2:
 # ── Tab 3: Q&A ───────────────────────────────────────────────────────
 with tab3:
     st.subheader("AWS 문서 Q&A (하이브리드 RAG)")
-    query = st.text_input("질문 입력", placeholder="예: Bedrock Agent를 설정하는 방법은?")
+    query = st.text_input("질문 입력", value="Bedrock 에서 agent 설정 방법")
     if st.button("🔍 검색", type="primary") and query:
         with st.spinner("검색 중..."):
             try:
