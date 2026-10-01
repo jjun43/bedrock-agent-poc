@@ -433,7 +433,6 @@ if page == "⚡ 실시간 수집":
                 st.error(f"❌ 오류 발생: {err}")
             else:
                 st.success("✅ Ingestion 완료! 다른 탭에서 결과를 확인하세요.")
-            st.markdown("")
             st.markdown("""
 <div style='display:flex;flex-direction:column;gap:8px;margin-top:8px;'>
 
