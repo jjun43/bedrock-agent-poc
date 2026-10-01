@@ -545,15 +545,34 @@ elif page == "💬 Q&A":
                 from agent import answer
                 result = answer(query)
                 st.markdown("### 💬 답변")
-                _ans = (result["answer"]
-                        .replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-                        .replace("\n", "<br>"))
-                st.markdown(
-                    f"<div style='border:1px solid #2c3235;border-radius:8px;"
-                    f"padding:18px 22px;background:#1a1d23;color:#d8dee9;"
-                    f"line-height:1.85;font-size:14px;margin-top:8px;'>{_ans}</div>",
-                    unsafe_allow_html=True
-                )
+                st.markdown("""
+<style>
+[data-testid="stVerticalBlockBorderWrapper"] {
+    background:#1a1d23 !important;
+    border-color:#2c3235 !important;
+    border-radius:8px !important;
+    padding:4px 8px !important;
+}
+[data-testid="stVerticalBlockBorderWrapper"] p,
+[data-testid="stVerticalBlockBorderWrapper"] li,
+[data-testid="stVerticalBlockBorderWrapper"] span {
+    color:#d8dee9 !important;
+    font-size:14px !important;
+    line-height:1.85 !important;
+}
+[data-testid="stVerticalBlockBorderWrapper"] h1,
+[data-testid="stVerticalBlockBorderWrapper"] h2,
+[data-testid="stVerticalBlockBorderWrapper"] h3 {
+    color:#f0f4f8 !important;
+}
+[data-testid="stVerticalBlockBorderWrapper"] code {
+    background:#2c3235 !important;
+    color:#7dd3fc !important;
+}
+</style>
+""", unsafe_allow_html=True)
+                with st.container(border=True):
+                    st.markdown(result["answer"])
                 if result.get("sources"):
                     st.markdown("### 📚 참고 문서")
                     for src in result["sources"]:
