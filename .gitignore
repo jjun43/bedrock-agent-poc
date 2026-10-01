@@ -18,3 +18,4 @@ venv/
 # IDE
 .idea/
 .vscode/
+.streamlit/secrets.toml
