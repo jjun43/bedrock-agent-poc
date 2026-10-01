@@ -433,32 +433,33 @@ if page == "⚡ 실시간 수집":
                 st.error(f"❌ 오류 발생: {err}")
             else:
                 st.success("✅ Ingestion 완료! 다른 탭에서 결과를 확인하세요.")
+            st.markdown("<style>.nav-card-btn>button{background:#1a1d23!important;border:1px solid #2c3235!important;border-radius:8px!important;padding:14px 18px!important;text-align:left!important;width:100%!important;color:#d8dee9!important;font-size:14px!important;margin-bottom:8px;}</style>", unsafe_allow_html=True)
             st.markdown("")
-            st.markdown("""
-<div style='display:flex;flex-direction:column;gap:8px;margin-top:8px;'>
-  <div style='background:#1a1d23;border:1px solid #2c3235;border-radius:8px;padding:14px 18px;display:flex;align-items:flex-start;gap:14px;'>
-    <span style='font-size:20px;'>📋</span>
-    <div>
-      <div style='color:#d8dee9;font-size:14px;font-weight:600;margin-bottom:3px;'>문서 다이제스트</div>
-      <div style='color:#6c7a8a;font-size:12px;line-height:1.6;'>수집된 AWS 문서의 요약·키워드·버전 정보를 카드 형태로 확인합니다.</div>
-    </div>
-  </div>
-  <div style='background:#1a1d23;border:1px solid #2c3235;border-radius:8px;padding:14px 18px;display:flex;align-items:flex-start;gap:14px;'>
-    <span style='font-size:20px;'>🕸️</span>
-    <div>
-      <div style='color:#d8dee9;font-size:14px;font-weight:600;margin-bottom:3px;'>지식 그래프</div>
-      <div style='color:#6c7a8a;font-size:12px;line-height:1.6;'>문서 간 유사도·버전 계승 관계를 NetworkX 그래프로 시각화합니다.</div>
-    </div>
-  </div>
-  <div style='background:#1a1d23;border:1px solid #2c3235;border-radius:8px;padding:14px 18px;display:flex;align-items:flex-start;gap:14px;'>
-    <span style='font-size:20px;'>💬</span>
-    <div>
-      <div style='color:#d8dee9;font-size:14px;font-weight:600;margin-bottom:3px;'>Q&amp;A</div>
-      <div style='color:#6c7a8a;font-size:12px;line-height:1.6;'>FAISS + Graph RAG 기반 하이브리드 검색으로 AWS 문서에 질문합니다.</div>
-    </div>
-  </div>
-</div>
-""", unsafe_allow_html=True)
+            _nav_items = [
+                ("📋", "문서 다이제스트", "수집된 AWS 문서의 요약·키워드·버전 정보를 카드 형태로 확인합니다.", "📋 문서 다이제스트"),
+                ("🕸️", "지식 그래프", "문서 간 유사도·버전 계승 관계를 NetworkX 그래프로 시각화합니다.", "🕸️ 지식 그래프"),
+                ("💬", "Q&A", "FAISS + Graph RAG 기반 하이브리드 검색으로 AWS 문서에 질문합니다.", "💬 Q&A"),
+            ]
+            for _icon, _title, _desc, _page_key in _nav_items:
+                st.markdown(
+                    f"<div style='background:#1a1d23;border:1px solid #2c3235;border-radius:8px 8px 0 0;"
+                    f"padding:14px 18px 10px;display:flex;align-items:flex-start;gap:14px;margin-top:8px;'>"
+                    f"<span style='font-size:20px;'>{_icon}</span>"
+                    f"<div><div style='color:#d8dee9;font-size:14px;font-weight:600;margin-bottom:3px;'>{_title}</div>"
+                    f"<div style='color:#6c7a8a;font-size:12px;line-height:1.6;'>{_desc}</div></div></div>",
+                    unsafe_allow_html=True
+                )
+                _col, _ = st.columns([1, 0.001])
+                with _col:
+                    st.markdown(
+                        "<div style='background:#1a1d23;border:1px solid #2c3235;border-top:none;"
+                        "border-radius:0 0 8px 8px;padding:0 18px 2px 18px;'>",
+                        unsafe_allow_html=True
+                    )
+                    if st.button(f"→ {_title} 바로가기", key=f"goto_{_page_key}", use_container_width=True):
+                        st.session_state.nav_page = _page_key
+                        st.rerun()
+                    st.markdown("</div>", unsafe_allow_html=True)
             st.markdown("")
             if st.button("🔄 다시 실행", type="secondary", use_container_width=True):
                 st.session_state.t4_started = False
@@ -502,7 +503,7 @@ elif page == "🕸️ 지식 그래프":
 
 elif page == "💬 Q&A":
     st.subheader("AWS 문서 Q&A (하이브리드 RAG)")
-    query = st.text_input("질문 입력", placeholder="예: Bedrock Agent를 설정하는 방법은?")
+    query = st.text_input("질문 입력", value="Bedrock Agent를 설정하는 방법은?")
     if st.button("🔍 검색", type="primary") and query:
         with st.spinner("검색 중..."):
             try:
