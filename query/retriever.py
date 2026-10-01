@@ -29,7 +29,7 @@ def load_artifacts() -> tuple:
     # 그래프
     resp = s3.get_object(Bucket=BUCKET, Key="graph.json")
     graph_data = json.loads(resp["Body"].read())
-    G = nx.node_link_graph(graph_data)
+    G = nx.node_link_graph(graph_data, edges="links")
     
     # 메타데이터
     resp = s3.get_object(Bucket=BUCKET, Key="metadata.json")
@@ -106,5 +106,5 @@ def hybrid_search(query: str, k: int = 3) -> dict:
     return {
         "query": query,
         "results": faiss_results,
-        "graph": nx.node_link_data(G)
+        "graph": nx.node_link_data(G, edges="links")
     }
