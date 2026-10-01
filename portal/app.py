@@ -129,7 +129,7 @@ def _render_steps(placeholder, current: int):
         nodes += (
             f"<div style='position:absolute;left:{pos:.1f}%;transform:translateX(-50%);"
             f"display:flex;flex-direction:column;align-items:center;'>"
-            f"<div style='font-size:10px;font-weight:{lw};color:{lc};white-space:nowrap;"
+            f"<div style='font-size:13px;font-weight:{lw};color:{lc};white-space:nowrap;"
             f"text-align:center;height:32px;display:flex;align-items:flex-end;"
             f"padding-bottom:6px;line-height:1.2;'>{name}</div>"
             f"<div style='{dot}'></div>"
@@ -138,7 +138,7 @@ def _render_steps(placeholder, current: int):
 
     html = (
         "<div style='padding:4px 3%;margin:10px 0 4px;'>"
-        "<div style='font-size:11px;font-weight:700;letter-spacing:4px;color:#475569;margin-bottom:10px;'>⚡ INGEST PROGRESS</div>"
+        "<div style='font-size:14px;font-weight:700;letter-spacing:4px;color:#475569;margin-bottom:12px;'>⚡ INGEST PROGRESS</div>"
         # ── 타임라인 ──
         "<div style='position:relative;height:58px;'>"
         "<div style='position:absolute;top:44px;left:0;right:0;height:2px;"
@@ -156,8 +156,7 @@ def _render_steps(placeholder, current: int):
         f"box-shadow:0 0 18px {glow_color}88;"
         "transition:width .5s ease;'></div>"
         "</div>"
-        f"<div style='margin-top:8px;text-align:center;font-size:12px;"
-        f"font-size:22px;font-weight:800;letter-spacing:3px;color:#cbd5e1;'>{bar_label}</div>"
+        f"<div style='margin-top:10px;text-align:center;font-size:32px;font-weight:800;letter-spacing:4px;color:#cbd5e1;'>{bar_label}</div>"
         "</div>"
         "</div>"
     )
