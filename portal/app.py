@@ -392,14 +392,37 @@ if page == "⚡ 실시간 수집":
             st.markdown("")
             st.markdown("## ⚡ 실시간 Ingestion 파이프라인")
             st.markdown("버튼을 누르면 위 파이프라인이 단계별로 진행되며 실시간 상태가 표시됩니다.")
-            st.markdown("**수집 대상 문서**")
             import yaml as _yaml
             _task_path = Path(__file__).parent.parent / "ingestion" / "task.yaml"
             try:
                 with open(_task_path) as _f:
                     _task = _yaml.safe_load(_f)
-                for _item in _task["steps"][0]["inputs"]["urls"]:
-                    st.markdown(f"- `{_item['label']}` — {_item['url']}")
+                _urls = _task["steps"][0]["inputs"]["urls"]
+                _rows = "".join(
+                    f"<div style='display:flex;align-items:baseline;gap:10px;padding:6px 0;"
+                    f"border-bottom:1px solid #2c3235;'>"
+                    f"<code style='background:#1e2130;color:#7dd3fc;padding:2px 7px;"
+                    f"border-radius:4px;font-size:12px;white-space:nowrap;'>{_item['label']}</code>"
+                    f"<a href='{_item['url']}' target='_blank' style='color:#6c7a8a;"
+                    f"font-size:12px;word-break:break-all;text-decoration:none;'"
+                    f"onmouseover=\"this.style.color='#94a3b8'\" onmouseout=\"this.style.color='#6c7a8a'\">"
+                    f"{_item['url']}</a></div>"
+                    for _item in _urls
+                )
+                st.markdown(
+                    f"<div style='border:1px solid #2c3235;border-radius:8px;overflow:hidden;"
+                    f"margin-top:16px;'>"
+                    f"<div style='background:#1a1d23;padding:8px 14px;border-bottom:1px solid #2c3235;"
+                    f"display:flex;align-items:center;gap:8px;'>"
+                    f"<span style='color:#f46800;font-size:13px;'>📄</span>"
+                    f"<span style='color:#d8dee9;font-size:13px;font-weight:600;'>수집 대상 문서</span>"
+                    f"<span style='margin-left:auto;background:#2c3235;color:#94a3b8;"
+                    f"font-size:11px;padding:1px 8px;border-radius:10px;'>{len(_urls)}개</span>"
+                    f"</div>"
+                    f"<div style='padding:4px 14px 4px;background:#111217;'>{_rows}</div>"
+                    f"</div>",
+                    unsafe_allow_html=True
+                )
             except Exception:
                 pass
     else:
@@ -411,17 +434,37 @@ if page == "⚡ 실시간 수집":
             else:
                 st.success("✅ Ingestion 완료! 다른 탭에서 결과를 확인하세요.")
             st.markdown("")
-            c1, c2 = st.columns(2)
-            with c1:
-                if st.button("🔄 다시 실행", type="secondary", use_container_width=True):
-                    st.session_state.t4_started = False
-                    st.session_state.t4_done = False
-                    st.session_state.t4_error = None
-                    st.rerun()
-            with c2:
-                if st.button("📋 다이제스트 새로고침", type="secondary", use_container_width=True):
-                    st.cache_data.clear()
-                    st.rerun()
+            st.markdown("""
+<div style='display:flex;flex-direction:column;gap:8px;margin-top:8px;'>
+  <div style='background:#1a1d23;border:1px solid #2c3235;border-radius:8px;padding:14px 18px;display:flex;align-items:flex-start;gap:14px;'>
+    <span style='font-size:20px;'>📋</span>
+    <div>
+      <div style='color:#d8dee9;font-size:14px;font-weight:600;margin-bottom:3px;'>문서 다이제스트</div>
+      <div style='color:#6c7a8a;font-size:12px;line-height:1.6;'>수집된 AWS 문서의 요약·키워드·버전 정보를 카드 형태로 확인합니다.</div>
+    </div>
+  </div>
+  <div style='background:#1a1d23;border:1px solid #2c3235;border-radius:8px;padding:14px 18px;display:flex;align-items:flex-start;gap:14px;'>
+    <span style='font-size:20px;'>🕸️</span>
+    <div>
+      <div style='color:#d8dee9;font-size:14px;font-weight:600;margin-bottom:3px;'>지식 그래프</div>
+      <div style='color:#6c7a8a;font-size:12px;line-height:1.6;'>문서 간 유사도·버전 계승 관계를 NetworkX 그래프로 시각화합니다.</div>
+    </div>
+  </div>
+  <div style='background:#1a1d23;border:1px solid #2c3235;border-radius:8px;padding:14px 18px;display:flex;align-items:flex-start;gap:14px;'>
+    <span style='font-size:20px;'>💬</span>
+    <div>
+      <div style='color:#d8dee9;font-size:14px;font-weight:600;margin-bottom:3px;'>Q&amp;A</div>
+      <div style='color:#6c7a8a;font-size:12px;line-height:1.6;'>FAISS + Graph RAG 기반 하이브리드 검색으로 AWS 문서에 질문합니다.</div>
+    </div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
+            st.markdown("")
+            if st.button("🔄 다시 실행", type="secondary", use_container_width=True):
+                st.session_state.t4_started = False
+                st.session_state.t4_done = False
+                st.session_state.t4_error = None
+                st.rerun()
 
 elif page == "📋 문서 다이제스트":
     st.subheader("최신 버전 AWS 튜토리얼 다이제스트")
