@@ -28,6 +28,9 @@ AWS 공식 문서에는 동일한 기능(예: Bedrock Agent 설정)에 대해 �
 
 ## 🏗️ 파이프라인 구조
 
+![Architecture Diagram](docs/architecture.svg)
+
+
 ### INGESTION (1회 실행)
 ```
 AWS Docs URLs
