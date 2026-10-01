@@ -404,7 +404,26 @@ with tab4:
             if err:
                 st.error(f"❌ 오류: {err}")
             else:
-                st.success("✅ Ingestion 완료! 다른 탭에서 결과를 확인하세요.")
+                st.success("✅ Ingestion 완료! 수집된 지식을 아래 탭에서 바로 확인하세요.")
+                st.markdown(
+                    """
+<div style="display:flex;flex-direction:column;gap:10px;margin-top:16px;">
+  <div style="background:#1e293b;border:1px solid #334155;border-left:4px solid #8b5cf6;border-radius:6px;padding:14px 18px;">
+    <div style="font-size:14px;font-weight:700;color:#c4b5fd;margin-bottom:4px;">📋 문서 다이제스트</div>
+    <div style="font-size:13px;color:#94a3b8;">LLM 모델이 생성한 문서별 핵심 요약 · 키워드 · 메타데이터를 한눈에 확인</div>
+  </div>
+  <div style="background:#1e293b;border:1px solid #334155;border-left:4px solid #10b981;border-radius:6px;padding:14px 18px;">
+    <div style="font-size:14px;font-weight:700;color:#6ee7b7;margin-bottom:4px;">🕸️ 지식 그래프</div>
+    <div style="font-size:13px;color:#94a3b8;">문서 간 엔티티 관계를 시각화한 인터랙티브 그래프로 지식 연결 구조 탐색</div>
+  </div>
+  <div style="background:#1e293b;border:1px solid #334155;border-left:4px solid #f59e0b;border-radius:6px;padding:14px 18px;">
+    <div style="font-size:14px;font-weight:700;color:#fcd34d;margin-bottom:4px;">💬 Q&A</div>
+    <div style="font-size:13px;color:#94a3b8;">FAISS 벡터 검색 + Graph BFS Hybrid RAG 기반 실시간 질의응답 시작</div>
+  </div>
+</div>
+                    """,
+                    unsafe_allow_html=True,
+                )
             st.markdown("")
             c1, c2 = st.columns(2)
             with c1:
