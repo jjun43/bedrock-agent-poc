@@ -46,31 +46,9 @@ def render_graph(graph_data: dict) -> str:
     import tempfile
     G = nx.node_link_graph(graph_data, edges="links")
     net = Network(height="450px", width="100%", bgcolor="#1a1a2e", font_color="#eee")
-    net.set_options("""
-{
-  "physics": {
-    "enabled": true,
-    "stabilization": { "enabled": true, "fit": true, "iterations": 150 },
-    "barnesHut": {
-      "gravitationalConstant": -4000,
-      "centralGravity": 0.4,
-      "springLength": 120,
-      "springConstant": 0.05
-    }
-  },
-  "interaction": { "zoomView": true, "dragView": true }
-}
-""")
-    import math
-    nodes_list = list(G.nodes(data=True))
-    n = max(len(nodes_list), 1)
-    for i, (node, attrs) in enumerate(nodes_list):
-        angle = 2 * math.pi * i / n
-        init_x = round(math.cos(angle) * 280, 1)
-        init_y = round(math.sin(angle) * 280, 1)
+    for node, attrs in G.nodes(data=True):
         color = "#4e8cff" if "bedrock" in node else "#ff6b6b"
-        net.add_node(node, label=node, color=color, size=20,
-                     title=attrs.get("summary", node), x=init_x, y=init_y)
+        net.add_node(node, label=node, color=color, size=20, title=attrs.get("summary", node))
     for u, v, data in G.edges(data=True):
         relation = data.get("relation", "related")
         color = "#ffd166" if relation == "supersedes" else "#95e1d3"
@@ -136,7 +114,7 @@ def _render_steps(placeholder, current: int):
         nodes += (
             f"<div style='position:absolute;left:{pos:.1f}%;transform:translateX(-50%);"
             f"display:flex;flex-direction:column;align-items:center;'>"
-            f"<div style='font-size:13px;font-weight:{lw};color:{lc};white-space:nowrap;"
+            f"<div style='font-size:10px;font-weight:{lw};color:{lc};white-space:nowrap;"
             f"text-align:center;height:32px;display:flex;align-items:flex-end;"
             f"padding-bottom:6px;line-height:1.2;'>{name}</div>"
             f"<div style='{dot}'></div>"
@@ -145,7 +123,6 @@ def _render_steps(placeholder, current: int):
 
     html = (
         "<div style='padding:4px 3%;margin:10px 0 4px;'>"
-        "<div style='font-size:14px;font-weight:700;letter-spacing:4px;color:#475569;margin-bottom:12px;'>⚡ INGEST PROGRESS</div>"
         # ── 타임라인 ──
         "<div style='position:relative;height:58px;'>"
         "<div style='position:absolute;top:44px;left:0;right:0;height:2px;"
@@ -163,7 +140,8 @@ def _render_steps(placeholder, current: int):
         f"box-shadow:0 0 18px {glow_color}88;"
         "transition:width .5s ease;'></div>"
         "</div>"
-        f"<div style='margin-top:10px;text-align:center;font-size:32px;font-weight:800;letter-spacing:4px;color:#cbd5e1;'>{bar_label}</div>"
+        f"<div style='margin-top:10px;text-align:center;font-size:17px;"
+        f"font-weight:800;letter-spacing:3px;color:#cbd5e1;'>{bar_label}</div>"
         "</div>"
         "</div>"
     )
@@ -315,189 +293,14 @@ def run_live_ingestion(prog_placeholder, log_area):
     return True
 
 
-# ── Grafana CSS ──────────────────────────────────────────────────────────
-st.markdown("""
-<style>
-[data-testid="stAppViewContainer"] > .main { background:#111217; }
-[data-testid="stSidebar"] { background:#181b1f !important; border-right:1px solid #2c3235; }
-[data-testid="stSidebar"] > div:first-child { padding-top:0; }
+# ── UI ───────────────────────────────────────────────────────────────
+st.title("🤖 AWS Tutorial Dedup POC")
+st.caption("Bedrock + FAISS + Graph RAG")
 
-.gf-logo {
-    padding:20px 16px 12px;
-    border-bottom:1px solid #2c3235;
-    margin-bottom:8px;
-}
-.gf-logo-title { font-size:15px;font-weight:700;color:#f46800;letter-spacing:0.02em; }
-.gf-logo-sub { font-size:11px;color:#6c7a8a;margin-top:2px; }
+tab4, tab1, tab2, tab3 = st.tabs(["⚡ 실시간 수집", "📋 문서 다이제스트", "🕸️ 지식 그래프", "💬 Q&A"])
 
-[data-testid="stSidebar"] [role="radiogroup"] { gap:2px !important; }
-[data-testid="stSidebar"] label[data-baseweb="radio"] {
-    background:transparent;border-radius:4px;padding:8px 16px;
-    cursor:pointer;transition:background .15s;width:100%;
-    font-size:14px;color:#ffffff !important;
-}
-[data-testid="stSidebar"] label[data-baseweb="radio"] p,
-[data-testid="stSidebar"] label[data-baseweb="radio"] span {
-    color:#ffffff !important;
-}
-[data-testid="stSidebar"] label[data-baseweb="radio"]:hover { background:#2c3235; }
-[data-testid="stSidebar"] label[data-baseweb="radio"][aria-checked="true"] {
-    background:rgba(244,104,0,0.15);
-    border-left:3px solid #f46800;
-    color:#f46800 !important;
-    font-weight:700;
-}
-
-.gf-page-header {
-    border-bottom:1px solid #2c3235;
-    padding:16px 0 14px;
-    margin-bottom:20px;
-}
-.gf-page-title { font-size:22px;font-weight:700;color:#d8dee9; }
-.gf-page-sub { font-size:13px;color:#6c7a8a;margin-top:3px; }
-.gf-page-sub2 { font-size:12px;color:#4a5568;margin-top:3px; }
-
-[data-testid="stMetricValue"] { color:#f46800 !important; }
-.stButton > button[kind="primary"] {
-    background:#f46800 !important;border:none;color:#fff !important;
-}
-.stButton > button[kind="primary"]:hover { background:#d45a00 !important; }
-
-.gf-sidebar-footer {
-    margin-top:32px;padding-top:12px;
-    border-top:1px solid #2c3235;
-    font-size:11px;color:#4a5568;
-    line-height:1.6;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# ── Sidebar ───────────────────────────────────────────────────────────────
-with st.sidebar:
-    st.markdown("""
-<div class="gf-logo">
-  <div class="gf-logo-title">🤖 AWS Dedup POC</div>
-  <div class="gf-logo-sub">Bedrock · FAISS · Graph RAG</div>
-</div>
-""", unsafe_allow_html=True)
-
-    page = st.radio(
-        "navigation",
-        ["⚡ 실시간 수집", "📋 문서 다이제스트", "🕸️ 지식 그래프", "💬 Q&A"],
-        key="nav_page",
-        label_visibility="collapsed",
-    )
-
-    st.markdown("""
-<div class="gf-sidebar-footer">
-  Amazon Bedrock<br>Strands Agents · FAISS · NetworkX
-</div>
-""", unsafe_allow_html=True)
-
-# ── Page header ───────────────────────────────────────────────────────────
-st.markdown("""
-<div class="gf-page-header">
-  <div class="gf-page-title">🤖 AWS Tutorial Dedup POC</div>
-  <div class="gf-page-sub">Bedrock + FAISS + Graph RAG &nbsp;·&nbsp; AWS ProServe Senior AI Application Architect L6</div>
-  <div class="gf-page-sub2">Claude Sonnet 4.6 · Titan Embed v2 · Strands Agents SDK · NetworkX · FAISS</div>
-</div>
-""", unsafe_allow_html=True)
-
-# ── ⚡ 실시간 수집 ────────────────────────────────────────────────────────
-if page == "⚡ 실시간 수집":
-    prog_placeholder = st.empty()
-    btn_placeholder  = st.empty()
-    log_placeholder  = st.empty()
-
-    if not st.session_state.get("t4_started"):
-        _render_steps(prog_placeholder, -1)
-
-        with btn_placeholder.container():
-            if st.button("🚀 실시간 수집 시작", type="primary", use_container_width=True):
-                st.session_state.t4_started = True
-                st.session_state.t4_error = None
-                btn_placeholder.empty()
-                log_placeholder.empty()
-                try:
-                    run_live_ingestion(prog_placeholder, log_placeholder)
-                    st.session_state.t4_done = True
-                except Exception as e:
-                    st.session_state.t4_error = str(e)
-                finally:
-                    st.rerun()
-
-        with log_placeholder.container():
-            st.markdown("## ⚡ 실시간 Ingestion 파이프라인")
-            st.markdown("버튼을 누르면 위 파이프라인이 단계별로 진행되며 실시간 상태가 표시됩니다.")
-            st.markdown("**수집 대상 문서**")
-            import yaml as _yaml
-            _task_path = Path(__file__).parent.parent / "ingestion" / "task.yaml"
-            try:
-                with open(_task_path) as _f:
-                    _task = _yaml.safe_load(_f)
-                for _item in _task["steps"][0]["inputs"]["urls"]:
-                    st.markdown(f"- `{_item['label']}` — {_item['url']}")
-            except Exception:
-                pass
-    else:
-        _render_steps(prog_placeholder, 5)
-        with log_placeholder.container():
-            err = st.session_state.get("t4_error")
-            if err:
-                st.error(f"❌ 오류: {err}")
-            else:
-                st.success("✅ Ingestion 완료! 사이드바 메뉴에서 결과를 확인하세요.")
-                st.markdown("""
-<script>
-function gotoPage(idx) {
-  var radios = window.parent.document.querySelectorAll(
-    '[data-testid="stSidebar"] input[type="radio"]');
-  if (radios && radios[idx]) radios[idx].click();
-}
-</script>
-<style>
-.nav-card { display:flex;flex-direction:column;gap:10px;margin-top:16px; }
-.nav-card-item {
-  background:#181b1f;border:1px solid #2c3235;border-radius:4px;
-  padding:14px 18px;cursor:pointer;transition:filter .15s,transform .1s;
-  text-decoration:none;display:block;
-}
-.nav-card-item:hover { filter:brightness(1.2); transform:translateX(3px); }
-.nav-card-item:active { transform:translateX(1px); }
-</style>
-<div class="nav-card">
-  <div class="nav-card-item" style="border-left:4px solid #8b5cf6;"
-       onclick="gotoPage(1)">
-    <div style="font-size:14px;font-weight:700;color:#c4b5fd;margin-bottom:4px;">📋 문서 다이제스트 →</div>
-    <div style="font-size:13px;color:#6c7a8a;">LLM 모델이 생성한 문서별 핵심 요약 · 키워드 · 메타데이터를 한눈에 확인</div>
-  </div>
-  <div class="nav-card-item" style="border-left:4px solid #10b981;"
-       onclick="gotoPage(2)">
-    <div style="font-size:14px;font-weight:700;color:#6ee7b7;margin-bottom:4px;">🕸️ 지식 그래프 →</div>
-    <div style="font-size:13px;color:#6c7a8a;">문서 간 엔티티 관계를 시각화한 인터랙티브 그래프로 지식 연결 구조 탐색</div>
-  </div>
-  <div class="nav-card-item" style="border-left:4px solid #f59e0b;"
-       onclick="gotoPage(3)">
-    <div style="font-size:14px;font-weight:700;color:#fcd34d;margin-bottom:4px;">💬 Q&A →</div>
-    <div style="font-size:13px;color:#6c7a8a;">FAISS 벡터 검색 + Graph BFS Hybrid RAG 기반 실시간 질의응답 시작</div>
-  </div>
-</div>
-                """, unsafe_allow_html=True)
-            st.markdown("")
-            c1, c2 = st.columns(2)
-            with c1:
-                if st.button("🔄 다시 실행", type="secondary", use_container_width=True):
-                    st.session_state.t4_started = False
-                    st.session_state.t4_done = False
-                    st.session_state.t4_error = None
-                    st.rerun()
-            with c2:
-                if st.button("📋 다이제스트 새로고침", type="secondary", use_container_width=True):
-                    st.cache_data.clear()
-                    st.rerun()
-
-# ── 📋 문서 다이제스트 ───────────────────────────────────────────────────
-elif page == "📋 문서 다이제스트":
+# ── Tab 1: 다이제스트 ─────────────────────────────────────────────────
+with tab1:
     st.subheader("최신 버전 AWS 튜토리얼 다이제스트")
     if st.button("🔄 새로고침"):
         st.cache_data.clear()
@@ -517,8 +320,8 @@ elif page == "📋 문서 다이제스트":
     else:
         st.info("아직 데이터가 없습니다.")
 
-# ── 🕸️ 지식 그래프 ──────────────────────────────────────────────────────
-elif page == "🕸️ 지식 그래프":
+# ── Tab 2: 그래프 ────────────────────────────────────────────────────
+with tab2:
     st.subheader("문서 관계 그래프")
     _, graph_data = load_data()
     if graph_data and graph_data.get("nodes"):
@@ -532,10 +335,10 @@ elif page == "🕸️ 지식 그래프":
     else:
         st.info("그래프 데이터가 없습니다.")
 
-# ── 💬 Q&A ───────────────────────────────────────────────────────────────
-elif page == "💬 Q&A":
+# ── Tab 3: Q&A ───────────────────────────────────────────────────────
+with tab3:
     st.subheader("AWS 문서 Q&A (하이브리드 RAG)")
-    query = st.text_input("질문 입력", value="Bedrock 에서 agent 설정 방법")
+    query = st.text_input("질문 입력", placeholder="예: Bedrock Agent를 설정하는 방법은?")
     if st.button("🔍 검색", type="primary") and query:
         with st.spinner("검색 중..."):
             try:
@@ -550,6 +353,64 @@ elif page == "💬 Q&A":
                         st.markdown(f"- [{src['label']}]({src['url']})  `{score:.3f}`")
             except Exception as e:
                 st.error(f"오류: {e}")
+
+# ── Tab 4: 실시간 수집 ────────────────────────────────────────────────
+with tab4:
+    prog_placeholder = st.empty()
+    log_placeholder = st.empty()
+
+    if not st.session_state.get("t4_started"):
+        # 대기 상태 진행 바 먼저 표시
+        _render_steps(prog_placeholder, -1)
+
+        with log_placeholder.container():
+            st.markdown("## ⚡ 실시간 Ingestion 파이프라인")
+            st.markdown(
+                "버튼을 누르면 위 파이프라인이 단계별로 진행되며 실시간 상태가 표시됩니다."
+            )
+            st.markdown("**수집 대상 문서**")
+            import yaml as _yaml
+            _task_path = Path(__file__).parent.parent / "ingestion" / "task.yaml"
+            try:
+                with open(_task_path) as _f:
+                    _task = _yaml.safe_load(_f)
+                for _item in _task["steps"][0]["inputs"]["urls"]:
+                    st.markdown(f"- `{_item['label']}` — {_item['url']}")
+            except Exception:
+                pass
+            st.markdown("")
+            if st.button("🚀 실시간 수집 시작", type="primary", use_container_width=True):
+                st.session_state.t4_started = True
+                st.session_state.t4_error = None
+                log_placeholder.empty()
+                try:
+                    run_live_ingestion(prog_placeholder, log_placeholder)
+                    st.session_state.t4_done = True
+                except Exception as e:
+                    st.session_state.t4_error = str(e)
+                finally:
+                    st.rerun()  # 완료 후 명시적 rerun → else 브랜치에서 완료 화면 표시
+    else:
+        # 완료 상태: 타임라인 + 로딩바를 COMPLETE 상태로 표시
+        _render_steps(prog_placeholder, 5)
+        with log_placeholder.container():
+            err = st.session_state.get("t4_error")
+            if err:
+                st.error(f"❌ 오류 발생: {err}")
+            else:
+                st.success("✅ Ingestion 완료! 다른 탭에서 결과를 확인하세요.")
+            st.markdown("")
+            c1, c2 = st.columns(2)
+            with c1:
+                if st.button("🔄 다시 실행", type="secondary", use_container_width=True):
+                    st.session_state.t4_started = False
+                    st.session_state.t4_done = False
+                    st.session_state.t4_error = None
+                    st.rerun()
+            with c2:
+                if st.button("📋 다이제스트 새로고침", type="secondary", use_container_width=True):
+                    st.cache_data.clear()
+                    st.rerun()
 
 st.divider()
 st.caption("Built with Amazon Bedrock · Strands Agents · FAISS · NetworkX · Streamlit")
