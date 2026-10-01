@@ -1,153 +1,163 @@
-# bedrock-agent-poc
+# AWS Tutorial Dedup POC
 
-> **PoC:** AWS 튜토리얼 문서 수집 → 중복 제거 + 최신 버전 정리 → Streamlit 포털 출력  
-> Amazon Bedrock · Strands Agents · Graph RAG · Harness Engineering 실습
+**AWS ProServe Senior AI Application Architect L6 지원용 Bedrock PoC**
+
+> MCP web_fetch로 AWS 튜토리얼 다중 버전 수집 → FAISS + Graph RAG로 중복 제거 → 최신 버전 다이제스트를 Streamlit으로 서빙
+
+---
 
 ## 🎯 시나리오
 
-AWS 튜토리얼은 서비스·SDK 버전별로 문서가 중복 존재한다.  
-MCP web_fetch로 다양한 버전의 튜토리얼을 수집하고,  
-FAISS + Graph RAG로 중복을 제거하여 **최신 버전 다이제스트만** 출력한다.
+AWS 공식 문서에는 동일한 기능(예: Bedrock Agent 설정)에 대해 여러 버전의 튜토리얼이 혼재합니다.  
+이 PoC는 중복 문서를 자동으로 탐지·제거하고, **최신 버전 정보만 담은 깔끔한 다이제스트**를 제공합니다.
 
-```
-[AWS Docs / Blog / GitHub aws-samples / Local .md (구버전)]
-      │  MCP web_fetch
-      ▼
-[Ingestion Agent] ── Nova Pro 메타 추출 ──► [S3]
-      │                                      raw_docs / faiss_index.bin / graph.json
-      └── Titan Embed V2 + FAISS ───────────►[S3]
-      └── NetworkX Graph ──────────────────►[S3]
-                                              │ load
-                                              ▼
-                          [Query Agent] ── FAISS + Graph BFS ── Nova Pro + Guardrails
-                                              │
-                                              ▼
-                                    [Streamlit Cloud 포털]
-                                    ├── 중복 제거 다이제스트
-                                    ├── 기술 관계 그래프 (Pyvis)
-                                    ├── Knowledge Bases 비교 탭
-                                    └── 직접 질의 Q&A
-```
+---
 
 ## 🏗️ 파이프라인 구조
 
-### ① INGESTION — 사전 1회 실행
+### INGESTION (1회 실행)
+```
+AWS Docs URLs
+    ↓ MCP web_fetch (httpx + html2text)
+Raw Markdown
+    ↓ Claude Sonnet 4.6 (메타데이터 추출)
+Enriched Docs
+    ↓ Titan Embed V2 → FAISS IndexFlatIP (cosine)
+Vector Index  ←→  NetworkX DiGraph (supersedes / similar_to / uses)
+    ↓
+S3 (faiss_index.bin + graph.json + metadata.json + raw_docs/)
+```
 
-| 단계 | 구현 |
-|------|------|
-| Task 정의 (Harness) | `task.yaml` → S3 업로드 → Agent가 문서로 실행 |
-| 문서 수집 | MCP web_fetch (`httpx` + `html2text`) |
-| 메타데이터 추출 | Nova Pro (서비스명·날짜·API 버전·키워드) |
-| 벡터 인덱싱 | Titan Embed V2 + FAISS (`faiss-cpu`) |
-| 그래프 빌드 | NetworkX (`supersedes`, `similar_to`, `uses` 엣지) |
-| 결과 저장 | S3 (raw_docs / faiss_index.bin / graph.json) |
+### QUERY (Streamlit 요청마다)
+```
+User Query
+    ↓ Titan Embed V2
+Query Vector
+    ↓ FAISS top-k (cosine ≥ 0.75)
+Seed Docs → Graph BFS (2홉 확장)
+    ↓ Hybrid Context
+Claude Sonnet 4.6 (Bedrock Guardrails 적용)
+    ↓
+Answer + Sources + Pyvis Graph
+```
 
-### ② QUERY / DEMO — 실시간
+---
 
-| 단계 | 구현 |
-|------|------|
-| 배포 | GitHub → Streamlit Community Cloud (자동 배포) |
-| 하이브리드 검색 | FAISS 유사도 검색 + Graph BFS 탐색 |
-| 응답 생성 | Nova Pro + Bedrock Guardrails (안전 필터) |
-| 관리형 RAG 비교 | Bedrock Knowledge Bases (커스텀 RAG vs 관리형 비교) |
-| Agent 엔드포인트 | Bedrock AgentCore (HTTP 배포, 맛보기) |
+## 🛠️ 기술 스택
 
-## 📦 기술 스택
+| 레이어 | 기술 |
+|--------|------|
+| **LLM** | Claude Sonnet 4.6 (`anthropic.claude-sonnet-4-6-20250514-v1:0`) |
+| **Embedding** | Amazon Titan Embed Text V2 |
+| **Vector DB** | FAISS (faiss-cpu, cosine similarity) |
+| **Graph RAG** | NetworkX DiGraph (BFS 2홉 확장) |
+| **Agent Framework** | Strands Agents (`@tool` 데코레이터) |
+| **Web Scraping** | httpx + html2text (MCP web_fetch 패턴) |
+| **Harness Engineering** | task.yaml 기반 문서 주도 파이프라인 |
+| **Safety** | Amazon Bedrock Guardrails |
+| **Storage** | Amazon S3 (ap-southeast-2) |
+| **Frontend** | Streamlit Community Cloud + Pyvis |
+| **Evaluation** | Bedrock LLM-as-Judge (Faithfulness / Relevancy / Recall) |
 
-| 구성 요소 | 기술 |
-|-----------|------|
-| LLM | Amazon Bedrock Nova Pro 1.0 |
-| 임베딩 | Amazon Titan Text Embeddings V2 |
-| 에이전트 프레임워크 | Strands Agents (`@tool` 데코레이터) |
-| 문서 기반 태스크 (Harness) | YAML → S3 → Agent 실행 |
-| 벡터 검색 | FAISS (`faiss-cpu`) |
-| 그래프 RAG | NetworkX |
-| 안전 필터 | Amazon Bedrock Guardrails |
-| 관리형 RAG | Amazon Bedrock Knowledge Bases |
-| Agent 배포 | Amazon Bedrock AgentCore |
-| 스토리지 | Amazon S3 |
-| 평가 | RAGAS + Amazon Bedrock Evaluation |
-| 그래프 시각화 | Pyvis |
-| 웹 배포 | Streamlit Community Cloud |
+---
 
-## 📋 진행 상태
-
-### Phase 0 — AWS 셋업
-- [ ] S3 버킷 생성 (`us-east-1`)
-- [ ] IAM 사용자 생성 + Access Key 발급
-- [ ] Bedrock 모델 접근 확인 (Nova Pro, Titan Embed V2)
-- [ ] 예산 알림 설정
-
-### Phase 1 — Ingestion Pipeline
-- [ ] task.yaml Harness 구현 (문서 기반 태스크 정의)
-- [ ] MCP web_fetch 도구 구현
-- [ ] Nova Pro 메타데이터 추출
-- [ ] Titan Embed V2 + FAISS 인덱싱
-- [ ] NetworkX 그래프 빌드
-- [ ] S3 저장 파이프라인 완성
-
-### Phase 2 — Query Agent
-- [ ] FAISS + Graph 하이브리드 검색
-- [ ] Nova Pro + Guardrails 응답 생성
-- [ ] Bedrock Knowledge Bases 비교 탭
-- [ ] Bedrock AgentCore 배포 (맛보기)
-
-### Phase 3 — Streamlit 포털
-- [ ] 중복 제거 다이제스트 카드
-- [ ] Pyvis 그래프 시각화
-- [ ] 직접 질의 Q&A 탭
-- [ ] Streamlit Community Cloud 배포
-
-### Phase 4 — 평가 · 문서화
-- [ ] RAGAS 평가 (Faithfulness, Context Recall)
-- [ ] Bedrock Evaluation 연동
-- [ ] README 최종 정리
-
-## 🗂️ 디렉토리 구조
+## 📁 디렉토리 구조
 
 ```
 bedrock-agent-poc/
 ├── ingestion/
-│   ├── task.yaml          # Harness: 태스크 문서 정의
-│   ├── agent.py           # Ingestion Agent (Strands)
-│   ├── web_fetch.py       # MCP web_fetch 도구
-│   └── run_ingestion.py   # 실행 스크립트 (1회)
+│   ├── task.yaml          # Harness: 태스크 문서 정의 (Agent가 S3에서 읽어 실행)
+│   ├── web_fetch.py       # MCP web_fetch 도구 (@tool 데코레이터)
+│   ├── agent.py           # Ingestion Agent (Strands + FAISS + NetworkX)
+│   └── run_ingestion.py   # 1회 실행 스크립트
 ├── query/
-│   ├── agent.py           # Query Agent (Strands + AgentCore)
-│   └── retriever.py       # FAISS + Graph 하이브리드 검색
+│   ├── retriever.py       # FAISS + Graph BFS 하이브리드 검색
+│   └── agent.py           # Query Agent (Bedrock Guardrails 포함)
 ├── portal/
-│   └── app.py             # Streamlit 포털
+│   └── app.py             # Streamlit 포털 (다이제스트 + 그래프 + Q&A)
 ├── evals/
-│   └── eval.py            # RAGAS + Bedrock Evaluation
-├── .env.example           # 환경변수 템플릿 (키 미포함)
-├── requirements.txt
+│   └── eval.py            # Bedrock LLM-as-Judge 평가
+├── .env                   # 환경변수 (git 제외)
+├── .env.example           # 환경변수 템플릿
+├── requirements.txt       # 의존성
 └── README.md
 ```
 
-## 💰 예상 비용
+---
+
+## 🚀 실행 방법
+
+### 1. 환경 설정
+```bash
+cp .env.example .env
+# .env에 AWS 자격증명 입력
+```
+
+### 2. 패키지 설치
+```bash
+/opt/anaconda3/bin/python -m pip install -r requirements.txt
+```
+
+### 3. Ingestion (1회)
+```bash
+cd ingestion
+/opt/anaconda3/bin/python run_ingestion.py
+```
+
+### 4. Streamlit 포털 실행
+```bash
+cd portal
+/opt/anaconda3/bin/python -m streamlit run app.py
+```
+
+---
+
+## ✅ Phase 체크리스트
+
+### Phase 0 — AWS 인프라 설정 ✅
+- [x] AWS 계정 로그인 (Ready Set Build, $140 크레딧)
+- [x] S3 버킷 생성 (`bedrock-agent-poc-jjun43`, ap-southeast-2)
+- [x] IAM 사용자 (`js43.lee`) + S3/Bedrock 권한
+- [x] Bedrock 모델 확인 (Claude Sonnet 4.6 서버리스)
+
+### Phase 1 — Ingestion Pipeline ✅
+- [x] `task.yaml` Harness 문서
+- [x] `web_fetch.py` MCP 도구
+- [x] `agent.py` Strands 기반 인제스천 에이전트
+- [x] FAISS 인덱스 + NetworkX 그래프 → S3
+
+### Phase 2 — Query Agent ✅
+- [x] FAISS 벡터 검색
+- [x] Graph BFS 확장 (하이브리드 RAG)
+- [x] Bedrock Guardrails 연동
+
+### Phase 3 — Streamlit 포털 ✅
+- [x] 최신 버전 다이제스트 카드
+- [x] Pyvis 인터랙티브 그래프
+- [x] Q&A 탭 (하이브리드 RAG)
+
+### Phase 4 — 평가 & 마무리 ✅
+- [x] Bedrock LLM-as-Judge (Faithfulness / Relevancy / Recall)
+- [ ] Streamlit Community Cloud 배포
+- [ ] Bedrock Evaluation 결과 README 추가
+
+---
+
+## 💰 비용 추산
 
 | 서비스 | 예상 비용 |
 |--------|-----------|
-| S3 | ~$0.01 |
-| Nova Pro (Ingestion + 데모 쿼리) | ~$0.15 |
-| Titan Embed V2 | ~$0.01 |
-| Guardrails | ~$0.02 |
-| Knowledge Bases (OpenSearch, 사용 후 즉시 삭제) | ~$1~3 |
-| Bedrock Evaluation | ~$0.10 |
-| **합계** | **~$1.5~3.5** |
+| Claude Sonnet 4.6 (인제스천 + 쿼리 테스트) | ~$0.50 |
+| Titan Embed V2 | ~$0.10 |
+| S3 (< 1MB) | ~$0.00 |
+| **합계** | **~$0.60** |
 
-> Ready Set Build 크레딧 $100 기준으로 충분한 여유  
-> ⚠️ Knowledge Bases 사용 후 OpenSearch Serverless 컬렉션 즉시 삭제 필요
+Ready Set Build $140 크레딧으로 충분히 커버됩니다.
 
-## 🔗 참고 자료
+---
 
-- [Strands Agents Workshop](https://catalog.us-east-1.prod.workshops.aws/workshops/33f099a6-45a2-47d7-9e3c-a23a6568821e/en-US)
-- [Amazon Bedrock AgentCore 문서](https://docs.aws.amazon.com/bedrock/latest/userguide/agentcore.html)
-- [Amazon Bedrock Guardrails](https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails.html)
-- [Amazon Bedrock Knowledge Bases](https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base.html)
-- [RAGAS 평가 프레임워크](https://docs.ragas.io/)
+## 📍 AWS 설정
 
-## ✍️ 작성자
-
-이준성 · SK플래닛 AI/Backend 개발자  
-개인 PoC 프로젝트 (2026.10 ~)
+- **리전**: ap-southeast-2 (시드니) — Ready Set Build 무료 플랜 지원 리전
+- **모델**: `anthropic.claude-sonnet-4-6-20250514-v1:0` (AU 추론 프로파일)
+- **버킷**: `bedrock-agent-poc-jjun43`
