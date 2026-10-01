@@ -1,12 +1,9 @@
 """Streamlit 포털: AWS Tutorial Dedup 대시보드"""
-import os
-import sys
-import json
+import os, sys, json
 import streamlit as st
 import networkx as nx
 from pathlib import Path
 
-# Streamlit secrets → 환경변수로 주입
 try:
     for k, v in st.secrets.items():
         os.environ.setdefault(k, str(v))
@@ -22,11 +19,7 @@ except ImportError:
 sys.path.insert(0, str(Path(__file__).parent.parent / "ingestion"))
 sys.path.insert(0, str(Path(__file__).parent.parent / "query"))
 
-st.set_page_config(
-    page_title="AWS Tutorial Dedup POC",
-    page_icon="🤖",
-    layout="wide"
-)
+st.set_page_config(page_title="AWS Tutorial Dedup POC", page_icon="🤖", layout="wide")
 
 
 @st.cache_data(ttl=300)
@@ -55,8 +48,7 @@ def render_graph(graph_data: dict) -> str:
     net = Network(height="450px", width="100%", bgcolor="#1a1a2e", font_color="#eee")
     for node, attrs in G.nodes(data=True):
         color = "#4e8cff" if "bedrock" in node else "#ff6b6b"
-        net.add_node(node, label=node, color=color, size=20,
-                     title=attrs.get("summary", node))
+        net.add_node(node, label=node, color=color, size=20, title=attrs.get("summary", node))
     for u, v, data in G.edges(data=True):
         relation = data.get("relation", "related")
         color = "#ffd166" if relation == "supersedes" else "#95e1d3"
@@ -69,14 +61,7 @@ def render_graph(graph_data: dict) -> str:
 
 def run_live_ingestion(log_area):
     """실시간 ingestion 파이프라인 실행 (로그 스트리밍)"""
-    import yaml
-    import httpx
-    import html2text
-    import boto3
-    import numpy as np
-    import faiss
-    import networkx as nx
-    import json
+    import yaml, httpx, html2text, boto3, numpy as np, faiss, tempfile
 
     logs = []
 
@@ -84,7 +69,6 @@ def run_live_ingestion(log_area):
         logs.append(msg)
         log_area.markdown("\n".join(logs))
 
-    # task.yaml 로드
     task_path = Path(__file__).parent.parent / "ingestion" / "task.yaml"
     with open(task_path) as f:
         task = yaml.safe_load(f)
@@ -100,14 +84,12 @@ def run_live_ingestion(log_area):
     log(f"🚀 태스크 시작: {task['name']}")
 
     # Step 1: MCP web_fetch
-    log("")
-    log("**[Step 1] MCP web_fetch** — AWS 공식 문서 수집 중...")
+    log("\n**[Step 1] MCP web_fetch** — AWS 공식 문서 수집 중...")
     docs = []
     h = html2text.HTML2Text()
     h.ignore_links = False
     h.ignore_images = True
     h.body_width = 0
-
     for item in urls:
         label, url = item["label"], item["url"]
         try:
@@ -119,29 +101,24 @@ def run_live_ingestion(log_area):
             log(f"  ✅ {label} — {len(content):,} chars")
         except Exception as e:
             log(f"  ❌ {label} 실패: {e}")
-
     log(f"\n  → {len(docs)}개 문서 수집 완료")
 
-    # Step 2: 메타데이터 추출
-    log("")
-    log("**[Step 2] Claude Sonnet** — 메타데이터 추출 중...")
+    # Step 2: Claude 메타데이터 추출
+    log("\n**[Step 2] Claude Sonnet** — 메타데이터 추출 중...")
     enriched = []
     for doc in docs:
         snippet = doc["content"][:3000]
         prompt = f"""다음 AWS 문서에서 메타데이터를 추출하세요.
 반드시 아래 JSON 형식으로만 응답하세요:
 {{"title":"...","version":"...","summary":"...","keywords":["..."],"supersedes":[]}}
-
 문서:
 {snippet}"""
         try:
             resp = bedrock.converse(
                 modelId=model_id,
-                messages=[{"role": "user", "content": [{"text": prompt}]}]
-            )
+                messages=[{"role": "user", "content": [{"text": prompt}]}])
             raw = resp["output"]["message"]["content"][0]["text"]
-            start = raw.find("{")
-            end = raw.rfind("}") + 1
+            start = raw.find("{"); end = raw.rfind("}") + 1
             meta = json.loads(raw[start:end])
             doc["metadata"] = meta
             enriched.append(doc)
@@ -151,9 +128,8 @@ def run_live_ingestion(log_area):
             doc["metadata"] = {"summary": "", "keywords": [], "version": "unknown"}
             enriched.append(doc)
 
-    # Step 3: FAISS 인덱스
-    log("")
-    log("**[Step 3] Titan Embed V2** — 벡터 임베딩 & FAISS 인덱싱...")
+    # Step 3: FAISS 임베딩
+    log("\n**[Step 3] Titan Embed V2** — 벡터 임베딩 & FAISS 인덱싱...")
     DIM = 1024
     index = faiss.IndexFlatIP(DIM)
     vectors = []
@@ -163,8 +139,7 @@ def run_live_ingestion(log_area):
             resp = bedrock.invoke_model(
                 modelId="amazon.titan-embed-text-v2:0",
                 body=json.dumps({"inputText": text, "dimensions": DIM, "normalize": True}),
-                contentType="application/json"
-            )
+                contentType="application/json")
             vec = np.array(json.loads(resp["body"].read())["embedding"], dtype="float32")
             norm = np.linalg.norm(vec)
             if norm > 0:
@@ -176,16 +151,14 @@ def run_live_ingestion(log_area):
             log(f"  ❌ {doc['label']} 임베딩 실패: {e}")
             vectors.append(np.zeros(DIM, dtype="float32"))
 
-    # Step 4: Graph 빌드
-    log("")
-    log("**[Step 4] NetworkX** — 지식 그래프 빌드...")
+    # Step 4: NetworkX 그래프
+    log("\n**[Step 4] NetworkX** — 지식 그래프 빌드...")
     G = nx.DiGraph()
     threshold = task.get("config", {}).get("dedup_threshold", 0.85)
     for doc in enriched:
-        G.add_node(doc["label"], url=doc["url"],
-                   summary=doc["metadata"].get("summary", ""))
-    n = len(vectors)
+        G.add_node(doc["label"], url=doc["url"], summary=doc["metadata"].get("summary", ""))
     edge_count = 0
+    n = len(vectors)
     for i in range(n):
         for j in range(i + 1, n):
             if np.linalg.norm(vectors[i]) > 0 and np.linalg.norm(vectors[j]) > 0:
@@ -198,40 +171,29 @@ def run_live_ingestion(log_area):
     log(f"  → 노드: {G.number_of_nodes()}, 엣지: {edge_count}")
 
     # Step 5: S3 저장
-    log("")
-    log("**[Step 5] S3** — 아티팩트 저장 중...")
+    log("\n**[Step 5] S3** — 아티팩트 저장 중...")
     try:
-        # FAISS index
-        import tempfile
         with tempfile.NamedTemporaryFile(suffix=".bin", delete=False) as tmp:
             faiss.write_index(index, tmp.name)
             s3.upload_file(tmp.name, bucket, "faiss_index.bin")
         log(f"  ✅ faiss_index.bin → s3://{bucket}/")
-
-        # graph.json
         graph_json = nx.node_link_data(G, edges="links")
         s3.put_object(Bucket=bucket, Key="graph.json",
                       Body=json.dumps(graph_json, ensure_ascii=False))
         log(f"  ✅ graph.json → s3://{bucket}/")
-
-        # metadata.json
-        meta_list = [{"label": d["label"], "url": d["url"],
-                      "metadata": d["metadata"]} for d in enriched]
+        meta_list = [{"label": d["label"], "url": d["url"], "metadata": d["metadata"]}
+                     for d in enriched]
         s3.put_object(Bucket=bucket, Key="metadata.json",
                       Body=json.dumps(meta_list, ensure_ascii=False))
         log(f"  ✅ metadata.json → s3://{bucket}/")
-
-        # raw_docs/
         for doc in enriched:
             s3.put_object(Bucket=bucket, Key=f"raw_docs/{doc['label']}.md",
                           Body=doc["content"].encode())
         log(f"  ✅ raw_docs/ → {len(enriched)}개 문서")
-
     except Exception as e:
         log(f"  ❌ S3 저장 실패: {e}")
 
-    log("")
-    log(f"✅ **Ingestion 완료!** 문서 {len(enriched)}개 처리")
+    log(f"\n✅ **Ingestion 완료!** 문서 {len(enriched)}개 처리")
     log("```")
     return True
 
@@ -247,7 +209,6 @@ with tab1:
     st.subheader("최신 버전 AWS 튜토리얼 다이제스트")
     if st.button("🔄 새로고침"):
         st.cache_data.clear()
-
     metadata, _ = load_data()
     if metadata:
         cols = st.columns(2)
@@ -282,10 +243,7 @@ with tab2:
 # ── Tab 3: Q&A ───────────────────────────────────────────────────────
 with tab3:
     st.subheader("AWS 문서 Q&A (하이브리드 RAG)")
-    query = st.text_input(
-        "질문 입력",
-        placeholder="예: Bedrock Agent를 설정하는 방법은?",
-    )
+    query = st.text_input("질문 입력", placeholder="예: Bedrock Agent를 설정하는 방법은?")
     if st.button("🔍 검색", type="primary") and query:
         with st.spinner("검색 중..."):
             try:
@@ -308,7 +266,6 @@ with tab4:
     버튼을 누르면 **MCP web_fetch → Claude 메타데이터 추출 → FAISS 인덱싱 → Graph 빌드 → S3 저장**
     전 과정이 실시간으로 실행됩니다.
     """)
-
     import yaml
     task_path = Path(__file__).parent.parent / "ingestion" / "task.yaml"
     try:
