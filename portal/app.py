@@ -334,7 +334,11 @@ st.markdown("""
 [data-testid="stSidebar"] label[data-baseweb="radio"] {
     background:transparent;border-radius:4px;padding:8px 16px;
     cursor:pointer;transition:background .15s;width:100%;
-    font-size:14px;color:#fff !important;
+    font-size:14px;color:#ffffff !important;
+}
+[data-testid="stSidebar"] label[data-baseweb="radio"] p,
+[data-testid="stSidebar"] label[data-baseweb="radio"] span {
+    color:#ffffff !important;
 }
 [data-testid="stSidebar"] label[data-baseweb="radio"]:hover { background:#2c3235; }
 [data-testid="stSidebar"] label[data-baseweb="radio"][aria-checked="true"] {
@@ -394,7 +398,7 @@ with st.sidebar:
 st.markdown("""
 <div class="gf-page-header">
   <div class="gf-page-title">🤖 AWS Tutorial Dedup POC</div>
-  <div class="gf-page-sub">Bedrock + FAISS + Graph RAG</div>
+  <div class="gf-page-sub">Bedrock + FAISS + Graph RAG &nbsp;·&nbsp; AWS ProServe Senior AI Application Architect L6</div>
   <div class="gf-page-sub2">Claude Sonnet 4.6 · Titan Embed v2 · Strands Agents SDK · NetworkX · FAISS</div>
 </div>
 """, unsafe_allow_html=True)
