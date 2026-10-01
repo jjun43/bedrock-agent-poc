@@ -168,8 +168,17 @@ def run_live_ingestion(prog_placeholder, log_area):
     logs = []
 
     def log(msg):
+        import re as _re
         logs.append(msg)
-        log_area.markdown("\n".join(logs))
+        _lines = [l for l in logs if l != "```"]
+        _html = "<br>".join([_re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', l) for l in _lines])
+        log_area.markdown(
+            f"<div style='background:#0d1117;border:1px solid #30363d;border-radius:8px;"
+            f"padding:16px 20px;font-family:ui-monospace,monospace;"
+            f"font-size:13px;color:#c9d1d9;line-height:1.9;max-height:450px;"
+            f"overflow-y:auto;'>{_html}</div>",
+            unsafe_allow_html=True
+        )
 
     task_path = Path(__file__).parent.parent / "ingestion" / "task.yaml"
     with open(task_path) as f:
@@ -536,7 +545,15 @@ elif page == "💬 Q&A":
                 from agent import answer
                 result = answer(query)
                 st.markdown("### 💬 답변")
-                st.write(result["answer"])
+                _ans = (result["answer"]
+                        .replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+                        .replace("\n", "<br>"))
+                st.markdown(
+                    f"<div style='border:1px solid #2c3235;border-radius:8px;"
+                    f"padding:18px 22px;background:#1a1d23;color:#d8dee9;"
+                    f"line-height:1.85;font-size:14px;margin-top:8px;'>{_ans}</div>",
+                    unsafe_allow_html=True
+                )
                 if result.get("sources"):
                     st.markdown("### 📚 참고 문서")
                     for src in result["sources"]:
