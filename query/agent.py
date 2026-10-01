@@ -10,7 +10,7 @@ from retriever import hybrid_search
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 bedrock = boto3.client("bedrock-runtime", region_name=os.getenv("AWS_DEFAULT_REGION"))
-MODEL_ID = os.getenv("BEDROCK_MODEL_ID")
+MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "au.anthropic.claude-sonnet-4-6")
 BUCKET = os.getenv("S3_BUCKET")
 
 # Bedrock Guardrails (선택적 — 생성 후 ID 입력)

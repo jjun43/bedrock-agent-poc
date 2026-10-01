@@ -117,7 +117,7 @@ def run_ingestion():
     
     for i, (distances, indices) in enumerate(zip(D, I)):
         for dist, j in zip(distances, indices):
-            if i != j and dist >= 0.85:
+            if i != j and dist >= 0.75:
                 G.add_edge(
                     enriched_docs[i]["label"],
                     enriched_docs[j]["label"],

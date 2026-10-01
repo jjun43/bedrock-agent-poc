@@ -46,6 +46,21 @@ def render_graph(graph_data: dict) -> str:
     import tempfile
     G = nx.node_link_graph(graph_data, edges="links")
     net = Network(height="450px", width="100%", bgcolor="#1a1a2e", font_color="#eee")
+    net.set_options("""
+{
+  "physics": {
+    "enabled": true,
+    "stabilization": { "enabled": true, "fit": true, "iterations": 150 },
+    "barnesHut": {
+      "gravitationalConstant": -4000,
+      "centralGravity": 0.4,
+      "springLength": 120,
+      "springConstant": 0.05
+    }
+  },
+  "interaction": { "zoomView": true, "dragView": true }
+}
+""")
     for node, attrs in G.nodes(data=True):
         color = "#4e8cff" if "bedrock" in node else "#ff6b6b"
         net.add_node(node, label=node, color=color, size=20, title=attrs.get("summary", node))

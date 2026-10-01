@@ -12,14 +12,24 @@ steps:
     tool: fetch_aws_doc
     inputs:
       urls:
+        # Amazon Bedrock 핵심 문서 (상호 참조 관계)
         - url: "https://docs.aws.amazon.com/bedrock/latest/userguide/what-is-bedrock.html"
           label: "bedrock-intro-v2"
         - url: "https://docs.aws.amazon.com/bedrock/latest/userguide/agents.html"
           label: "bedrock-agents-v2"
         - url: "https://docs.aws.amazon.com/bedrock/latest/userguide/knowledge-base.html"
           label: "bedrock-kb-v2"
+        - url: "https://docs.aws.amazon.com/bedrock/latest/userguide/guardrails.html"
+          label: "bedrock-guardrails-v1"
+        - url: "https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html"
+          label: "bedrock-models-v2"
+        # Strands Agents SDK (Bedrock Agents 기반)
         - url: "https://strandsagents.com/latest/documentation/docs/get-started/quick-start/"
           label: "strands-quickstart-v1"
+        - url: "https://strandsagents.com/latest/documentation/docs/concepts/agents/"
+          label: "strands-agents-v1"
+        - url: "https://strandsagents.com/latest/documentation/docs/concepts/tools/"
+          label: "strands-tools-v1"
 
   - id: extract_metadata
     name: 메타데이터 추출
@@ -40,7 +50,7 @@ steps:
     depends_on: extract_metadata
     config:
       embed_model_id: "${BEDROCK_EMBED_MODEL_ID}"
-      similarity_threshold: 0.85
+      similarity_threshold: 0.75
       chunk_size: 512
       chunk_overlap: 64
 
