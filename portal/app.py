@@ -73,7 +73,7 @@ def run_live_ingestion(log_area):
     with open(task_path) as f:
         task = yaml.safe_load(f)
 
-    urls = task["steps"][0]["urls"]
+    urls = task["steps"][0]["inputs"]["urls"]
     bucket = os.getenv("S3_BUCKET")
     region = os.getenv("AWS_DEFAULT_REGION")
     model_id = os.getenv("BEDROCK_MODEL_ID")
@@ -81,7 +81,7 @@ def run_live_ingestion(log_area):
     s3 = boto3.client("s3", region_name=region)
 
     log("```")
-    log(f"🚀 태스크 시작: {task['name']}")
+    log(f"🚀 태스크 시작: {task['task']['name']}")
 
     # Step 1: MCP web_fetch
     log("\n**[Step 1] MCP web_fetch** — AWS 공식 문서 수집 중...")
@@ -272,7 +272,7 @@ with tab4:
         with open(task_path) as f:
             task = yaml.safe_load(f)
         st.markdown("**수집 대상 URL:**")
-        for item in task["steps"][0]["urls"]:
+        for item in task["steps"][0]["inputs"]["urls"]:
             st.markdown(f"- `{item['label']}` — {item['url']}")
     except Exception:
         pass
