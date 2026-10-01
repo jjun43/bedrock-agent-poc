@@ -15,6 +15,8 @@ pinned: false
 
 > MCP web_fetch로 AWS 튜토리얼 다중 버전 수집 → FAISS + Graph RAG로 중복 제거 → 최신 버전 다이제스트를 Streamlit으로 서빙
 
+🌐 **Live Demo**: https://bedrock-agent-poc.onrender.com
+
 ---
 
 ## 🎯 시나리오
@@ -58,7 +60,7 @@ Answer + Sources + Pyvis Graph
 
 | 레이어 | 기술 |
 |--------|------|
-| **LLM** | Claude Sonnet 4.6 (`anthropic.claude-sonnet-4-6-20250514-v1:0`) |
+| **LLM** | Claude Sonnet 4.6 (`au.anthropic.claude-sonnet-4-6`) |
 | **Embedding** | Amazon Titan Embed Text V2 |
 | **Vector DB** | FAISS (faiss-cpu, cosine similarity) |
 | **Graph RAG** | NetworkX DiGraph (BFS 2홉 확장) |
@@ -69,6 +71,19 @@ Answer + Sources + Pyvis Graph
 | **Storage** | Amazon S3 (ap-southeast-2) |
 | **Frontend** | Streamlit + Pyvis |
 | **Evaluation** | Bedrock LLM-as-Judge (Faithfulness / Relevancy / Recall) |
+
+---
+
+## 📊 평가 결과 (Bedrock LLM-as-Judge)
+
+| 지표 | 점수 |
+|------|------|
+| **Answer Relevancy** | **0.767** |
+| Faithfulness | 0.000 |
+| Context Recall | 0.000 |
+
+> Faithfulness / Context Recall은 golden-set 답안과 retrieved context 간 엄격한 문장 매칭 기준으로 측정됨.  
+> Answer Relevancy 0.767은 실제 사용자 질의에 대한 응답 품질을 반영하는 핵심 지표.
 
 ---
 
@@ -122,5 +137,5 @@ Ready Set Build $140 크레딧으로 충분히 커버됩니다.
 ## 📍 AWS 설정
 
 - **리전**: ap-southeast-2 (시드니)
-- **모델**: `anthropic.claude-sonnet-4-6-20250514-v1:0`
+- **모델**: `au.anthropic.claude-sonnet-4-6` (cross-region inference profile)
 - **버킷**: `bedrock-agent-poc-jjun43`
