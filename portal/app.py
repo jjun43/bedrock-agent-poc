@@ -407,17 +407,32 @@ with tab4:
                 st.success("✅ Ingestion 완료! 수집된 지식을 아래 탭에서 바로 확인하세요.")
                 st.markdown(
                     """
-<div style="display:flex;flex-direction:column;gap:10px;margin-top:16px;">
-  <div style="background:#1e293b;border:1px solid #334155;border-left:4px solid #8b5cf6;border-radius:6px;padding:14px 18px;">
-    <div style="font-size:14px;font-weight:700;color:#c4b5fd;margin-bottom:4px;">📋 문서 다이제스트</div>
+<style>
+.nav-card {
+  display:flex;flex-direction:column;gap:10px;margin-top:16px;
+}
+.nav-card-item {
+  background:#1e293b;border:1px solid #334155;border-radius:6px;
+  padding:14px 18px;cursor:pointer;transition:filter .15s,transform .1s;
+  text-decoration:none;display:block;
+}
+.nav-card-item:hover { filter:brightness(1.15); transform:translateX(3px); }
+.nav-card-item:active { transform:translateX(1px); }
+</style>
+<div class="nav-card">
+  <div class="nav-card-item" style="border-left:4px solid #8b5cf6;"
+       onclick="window.parent.document.querySelectorAll('[role=tab]')[0].click()">
+    <div style="font-size:14px;font-weight:700;color:#c4b5fd;margin-bottom:4px;">📋 문서 다이제스트 →</div>
     <div style="font-size:13px;color:#94a3b8;">LLM 모델이 생성한 문서별 핵심 요약 · 키워드 · 메타데이터를 한눈에 확인</div>
   </div>
-  <div style="background:#1e293b;border:1px solid #334155;border-left:4px solid #10b981;border-radius:6px;padding:14px 18px;">
-    <div style="font-size:14px;font-weight:700;color:#6ee7b7;margin-bottom:4px;">🕸️ 지식 그래프</div>
+  <div class="nav-card-item" style="border-left:4px solid #10b981;"
+       onclick="window.parent.document.querySelectorAll('[role=tab]')[1].click()">
+    <div style="font-size:14px;font-weight:700;color:#6ee7b7;margin-bottom:4px;">🕸️ 지식 그래프 →</div>
     <div style="font-size:13px;color:#94a3b8;">문서 간 엔티티 관계를 시각화한 인터랙티브 그래프로 지식 연결 구조 탐색</div>
   </div>
-  <div style="background:#1e293b;border:1px solid #334155;border-left:4px solid #f59e0b;border-radius:6px;padding:14px 18px;">
-    <div style="font-size:14px;font-weight:700;color:#fcd34d;margin-bottom:4px;">💬 Q&A</div>
+  <div class="nav-card-item" style="border-left:4px solid #f59e0b;"
+       onclick="window.parent.document.querySelectorAll('[role=tab]')[2].click()">
+    <div style="font-size:14px;font-weight:700;color:#fcd34d;margin-bottom:4px;">💬 Q&A →</div>
     <div style="font-size:13px;color:#94a3b8;">FAISS 벡터 검색 + Graph BFS Hybrid RAG 기반 실시간 질의응답 시작</div>
   </div>
 </div>
