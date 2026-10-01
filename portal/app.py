@@ -59,7 +59,45 @@ def render_graph(graph_data: dict) -> str:
             return fh.read()
 
 
-def run_live_ingestion(log_area):
+PIPELINE_STEPS = [
+    "MCP web_fetch",
+    "Claude 메타데이터 추출",
+    "FAISS 인덱싱",
+    "Graph 빌드",
+    "S3 저장",
+]
+
+def _render_steps(placeholder, current: int, total: int = 5):
+    """상단 스텝 진행 바 렌더링 (current=-1: 대기, current=total: 완료)"""
+    bars = []
+    for i, name in enumerate(PIPELINE_STEPS):
+        if i < current:
+            icon, color, bg = "✅", "#16a34a", "#f0fdf4"
+        elif i == current:
+            icon, color, bg = "⏳", "#d97706", "#fffbeb"
+        else:
+            icon, color, bg = "○", "#94a3b8", "#f8fafc"
+        bars.append(
+            f"<div style='flex:1;text-align:center;padding:8px 4px;border-radius:8px;"
+            f"background:{bg};border:1px solid {color}33;'>"
+            f"<div style='font-size:16px'>{icon}</div>"
+            f"<div style='font-size:11px;font-weight:600;color:{color};margin-top:2px'>{name}</div>"
+            f"</div>"
+        )
+        if i < len(PIPELINE_STEPS) - 1:
+            arrow_col = "#16a34a" if i < current else "#cbd5e1"
+            bars.append(
+                f"<div style='display:flex;align-items:center;padding:0 2px;"
+                f"color:{arrow_col};font-size:18px'>→</div>"
+            )
+    html = (
+        "<div style='display:flex;align-items:stretch;gap:0;"
+        "padding:12px 0 16px;'>" + "".join(bars) + "</div>"
+    )
+    placeholder.markdown(html, unsafe_allow_html=True)
+
+
+def run_live_ingestion(prog_placeholder, log_area):
     """실시간 ingestion 파이프라인 실행 (로그 스트리밍)"""
     import yaml, httpx, html2text, boto3, numpy as np, faiss, tempfile
 
@@ -84,6 +122,7 @@ def run_live_ingestion(log_area):
     log(f"🚀 태스크 시작: {task['task']['name']}")
 
     # Step 1: MCP web_fetch
+    _render_steps(prog_placeholder, 0)
     log("\n**[Step 1] MCP web_fetch** — AWS 공식 문서 수집 중...")
     docs = []
     h = html2text.HTML2Text()
@@ -104,6 +143,7 @@ def run_live_ingestion(log_area):
     log(f"\n  → {len(docs)}개 문서 수집 완료")
 
     # Step 2: Claude 메타데이터 추출
+    _render_steps(prog_placeholder, 1)
     log("\n**[Step 2] Claude Sonnet** — 메타데이터 추출 중...")
     enriched = []
     for doc in docs:
@@ -129,6 +169,7 @@ def run_live_ingestion(log_area):
             enriched.append(doc)
 
     # Step 3: FAISS 임베딩
+    _render_steps(prog_placeholder, 2)
     log("\n**[Step 3] Titan Embed V2** — 벡터 임베딩 & FAISS 인덱싱...")
     DIM = 1024
     index = faiss.IndexFlatIP(DIM)
@@ -152,6 +193,7 @@ def run_live_ingestion(log_area):
             vectors.append(np.zeros(DIM, dtype="float32"))
 
     # Step 4: NetworkX 그래프
+    _render_steps(prog_placeholder, 3)
     log("\n**[Step 4] NetworkX** — 지식 그래프 빌드...")
     G = nx.DiGraph()
     threshold = task.get("config", {}).get("dedup_threshold", 0.85)
@@ -171,6 +213,7 @@ def run_live_ingestion(log_area):
     log(f"  → 노드: {G.number_of_nodes()}, 엣지: {edge_count}")
 
     # Step 5: S3 저장
+    _render_steps(prog_placeholder, 4)
     log("\n**[Step 5] S3** — 아티팩트 저장 중...")
     try:
         with tempfile.NamedTemporaryFile(suffix=".bin", delete=False) as tmp:
@@ -193,6 +236,7 @@ def run_live_ingestion(log_area):
     except Exception as e:
         log(f"  ❌ S3 저장 실패: {e}")
 
+    _render_steps(prog_placeholder, 5)
     log(f"\n✅ **Ingestion 완료!** 문서 {len(enriched)}개 처리")
     log("```")
     return True
@@ -261,31 +305,58 @@ with tab3:
 
 # ── Tab 4: 실시간 수집 ────────────────────────────────────────────────
 with tab4:
-    st.subheader("⚡ 실시간 Ingestion 파이프라인")
-    st.markdown("""
-    버튼을 누르면 **MCP web_fetch → Claude 메타데이터 추출 → FAISS 인덱싱 → Graph 빌드 → S3 저장**
-    전 과정이 실시간으로 실행됩니다.
-    """)
-    import yaml
-    task_path = Path(__file__).parent.parent / "ingestion" / "task.yaml"
-    try:
-        with open(task_path) as f:
-            task = yaml.safe_load(f)
-        st.markdown("**수집 대상 URL:**")
-        for item in task["steps"][0]["inputs"]["urls"]:
-            st.markdown(f"- `{item['label']}` — {item['url']}")
-    except Exception:
-        pass
+    prog_placeholder = st.empty()
+    log_placeholder = st.empty()
 
-    if st.button("🚀 실시간 수집 시작", type="primary"):
-        log_area = st.empty()
-        with st.spinner("파이프라인 실행 중..."):
+    if not st.session_state.get("t4_started"):
+        with log_placeholder.container():
+            st.markdown("## ⚡ 실시간 Ingestion 파이프라인")
+            # Pipeline flow badges
+            st.markdown(
+                "<div style='display:flex;align-items:center;gap:6px;flex-wrap:wrap;"
+                "margin:12px 0 20px;font-size:13px;'>"
+                "<span style='background:#dbeafe;color:#1e40af;padding:4px 12px;"
+                "border-radius:20px;font-weight:600'>MCP web_fetch</span>"
+                "<span style='color:#94a3b8;font-size:18px'>→</span>"
+                "<span style='background:#fef3c7;color:#92400e;padding:4px 12px;"
+                "border-radius:20px;font-weight:600'>Claude 메타데이터 추출</span>"
+                "<span style='color:#94a3b8;font-size:18px'>→</span>"
+                "<span style='background:#dcfce7;color:#166534;padding:4px 12px;"
+                "border-radius:20px;font-weight:600'>FAISS 인덱싱</span>"
+                "<span style='color:#94a3b8;font-size:18px'>→</span>"
+                "<span style='background:#f3e8ff;color:#6b21a8;padding:4px 12px;"
+                "border-radius:20px;font-weight:600'>Graph 빌드</span>"
+                "<span style='color:#94a3b8;font-size:18px'>→</span>"
+                "<span style='background:#fef9c3;color:#713f12;padding:4px 12px;"
+                "border-radius:20px;font-weight:600'>S3 저장</span>"
+                "</div>",
+                unsafe_allow_html=True,
+            )
+            st.markdown("**수집 대상 문서**")
+            import yaml as _yaml
+            _task_path = Path(__file__).parent.parent / "ingestion" / "task.yaml"
             try:
-                run_live_ingestion(log_area)
-                st.success("✅ 완료! '문서 다이제스트' 탭에서 결과를 확인하세요.")
-                st.cache_data.clear()
-            except Exception as e:
-                st.error(f"오류: {e}")
+                with open(_task_path) as _f:
+                    _task = _yaml.safe_load(_f)
+                for _item in _task["steps"][0]["inputs"]["urls"]:
+                    st.markdown(f"- `{_item['label']}` — {_item['url']}")
+            except Exception:
+                pass
+            st.markdown("")
+            if st.button("🚀 실시간 수집 시작", type="primary", use_container_width=True):
+                st.session_state.t4_started = True
+                log_placeholder.empty()
+                try:
+                    run_live_ingestion(prog_placeholder, log_placeholder)
+                    st.success("✅ 완료! '문서 다이제스트' 탭에서 결과를 확인하세요.")
+                    st.cache_data.clear()
+                except Exception as e:
+                    st.error(f"오류: {e}")
+    else:
+        st.info("이미 수집이 완료되었습니다.")
+        if st.button("🔄 다시 실행", type="secondary"):
+            st.session_state.t4_started = False
+            st.rerun()
 
 st.divider()
 st.caption("Built with Amazon Bedrock · Strands Agents · FAISS · NetworkX · Streamlit")
