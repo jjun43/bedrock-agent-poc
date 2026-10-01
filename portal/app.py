@@ -378,6 +378,18 @@ if page == "⚡ 실시간 수집":
     if not st.session_state.get("t4_started"):
         _render_steps(prog_placeholder, -1)
         with log_placeholder.container():
+            if st.button("🚀 실시간 수집 시작", type="primary", use_container_width=True):
+                st.session_state.t4_started = True
+                st.session_state.t4_error = None
+                log_placeholder.empty()
+                try:
+                    run_live_ingestion(prog_placeholder, log_placeholder)
+                    st.session_state.t4_done = True
+                except Exception as e:
+                    st.session_state.t4_error = str(e)
+                finally:
+                    st.rerun()
+            st.markdown("")
             st.markdown("## ⚡ 실시간 Ingestion 파이프라인")
             st.markdown("버튼을 누르면 위 파이프라인이 단계별로 진행되며 실시간 상태가 표시됩니다.")
             st.markdown("**수집 대상 문서**")
@@ -390,18 +402,6 @@ if page == "⚡ 실시간 수집":
                     st.markdown(f"- `{_item['label']}` — {_item['url']}")
             except Exception:
                 pass
-            st.markdown("")
-            if st.button("🚀 실시간 수집 시작", type="primary", use_container_width=True):
-                st.session_state.t4_started = True
-                st.session_state.t4_error = None
-                log_placeholder.empty()
-                try:
-                    run_live_ingestion(prog_placeholder, log_placeholder)
-                    st.session_state.t4_done = True
-                except Exception as e:
-                    st.session_state.t4_error = str(e)
-                finally:
-                    st.rerun()
     else:
         _render_steps(prog_placeholder, 5)
         with log_placeholder.container():
