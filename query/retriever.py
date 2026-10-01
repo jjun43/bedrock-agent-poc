@@ -15,7 +15,7 @@ s3 = boto3.client("s3", region_name=os.getenv("AWS_DEFAULT_REGION"))
 
 BUCKET = os.getenv("S3_BUCKET")
 EMBED_MODEL_ID = os.getenv("BEDROCK_EMBED_MODEL_ID", "amazon.titan-embed-text-v2:0")
-SIMILARITY_THRESHOLD = 0.75
+SIMILARITY_THRESHOLD = 0.30
 
 
 def load_artifacts() -> tuple:
@@ -42,7 +42,7 @@ def get_query_embedding(text: str) -> np.ndarray:
     """쿼리 텍스트를 임베딩 벡터로 변환"""
     resp = bedrock.invoke_model(
         modelId=EMBED_MODEL_ID,
-        body=json.dumps({"inputText": text[:8000]}),
+        body=json.dumps({"inputText": text[:8000], "dimensions": 1024, "normalize": True}),
         contentType="application/json"
     )
     vec = np.array([json.loads(resp["body"].read())["embedding"]], dtype="float32")

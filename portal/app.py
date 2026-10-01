@@ -334,7 +334,7 @@ st.markdown("""
 [data-testid="stSidebar"] label[data-baseweb="radio"] {
     background:transparent;border-radius:4px;padding:8px 16px;
     cursor:pointer;transition:background .15s;width:100%;
-    font-size:14px;color:#d8dee9 !important;
+    font-size:14px;color:#fff !important;
 }
 [data-testid="stSidebar"] label[data-baseweb="radio"]:hover { background:#2c3235; }
 [data-testid="stSidebar"] label[data-baseweb="radio"][aria-checked="true"] {
