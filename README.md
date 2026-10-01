@@ -11,7 +11,7 @@ pinned: false
 
 # AWS Tutorial Dedup POC
 
-**AWS ProServe Senior AI Application Architect L6 지원용 Bedrock PoC**
+**Amazon Bedrock 기반 AWS 튜토리얼 중복 감지 & RAG PoC**
 
 > MCP web_fetch로 AWS 튜토리얼 다중 버전 수집 → FAISS + Graph RAG로 중복 제거 → 최신 버전 다이제스트를 Streamlit으로 서빙
 
@@ -21,7 +21,7 @@ pinned: false
 
 ## 🎯 시나리오
 
-AWS 공식 문서에는 동일한 기능(예: Bedrock Agent 설정)에 대해 여러 버전의 튜토리얼이 혼재합니다.  
+AWS 공식 문서에는 동일한 기능(예: Bedrock Agent 설정)에 대해 버전별로 업데이트된 복수의 튜토리얼이 지속적으로 제공됩니다.  
 이 PoC는 중복 문서를 자동으로 탐지·제거하고, **최신 버전 정보만 담은 깔끔한 다이제스트**를 제공합니다.
 
 ---
@@ -49,7 +49,7 @@ S3 (faiss_index.bin + graph.json + metadata.json + raw_docs/)
 User Query
     ↓ Titan Embed V2
 Query Vector
-    ↓ FAISS top-k (cosine ≥ 0.75)
+    ↓ FAISS top-k (cosine ≥ 0.30)
 Seed Docs → Graph BFS (2홉 확장)
     ↓ Hybrid Context
 Claude Sonnet 4.6 (Bedrock Guardrails 적용)

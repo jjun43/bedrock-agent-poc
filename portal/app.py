@@ -394,7 +394,7 @@ with st.sidebar:
 st.markdown("""
 <div class="gf-page-header">
   <div class="gf-page-title">🤖 AWS Tutorial Dedup POC</div>
-  <div class="gf-page-sub">Bedrock + FAISS + Graph RAG &nbsp;·&nbsp; AWS ProServe Senior AI Application Architect L6</div>
+  <div class="gf-page-sub">Bedrock + FAISS + Graph RAG</div>
   <div class="gf-page-sub2">Claude Sonnet 4.6 · Titan Embed v2 · Strands Agents SDK · NetworkX · FAISS</div>
 </div>
 """, unsafe_allow_html=True)
