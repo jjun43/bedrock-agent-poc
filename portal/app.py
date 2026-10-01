@@ -67,32 +67,61 @@ PIPELINE_STEPS = [
     "S3 저장",
 ]
 
-def _render_steps(placeholder, current: int, total: int = 5):
-    """상단 스텝 진행 바 렌더링 (current=-1: 대기, current=total: 완료)"""
-    bars = []
+def _render_steps(placeholder, current: int):
+    """타임라인 진행 바 (current=-1: 대기, 0~4: 진행중, 5: 완료)"""
+    COLORS = ["#14b8a6", "#8b5cf6", "#3b82f6", "#10b981", "#f59e0b"]
+    total = len(PIPELINE_STEPS)
+
+    # 진행선 너비 %
+    if current <= 0:
+        fill = 0.0
+    elif current >= total:
+        fill = 100.0
+    else:
+        fill = current / (total - 1) * 100.0
+
+    # 그라디언트 (완료 색상만)
+    done = COLORS[: max(1, min(current, total))]
+    gradient = f"linear-gradient(90deg, {', '.join(done)})"
+
+    nodes = ""
     for i, name in enumerate(PIPELINE_STEPS):
-        if i < current:
-            icon, color, bg = "✅", "#16a34a", "#f0fdf4"
-        elif i == current:
-            icon, color, bg = "⏳", "#d97706", "#fffbeb"
-        else:
-            icon, color, bg = "○", "#94a3b8", "#f8fafc"
-        bars.append(
-            f"<div style='flex:1;text-align:center;padding:8px 4px;border-radius:8px;"
-            f"background:{bg};border:1px solid {color}33;'>"
-            f"<div style='font-size:16px'>{icon}</div>"
-            f"<div style='font-size:11px;font-weight:600;color:{color};margin-top:2px'>{name}</div>"
+        c = COLORS[i]
+        pos = i / (total - 1) * 100  # 수평 위치 %
+        if current == -1 or i > current:          # 대기
+            dot = (f"width:14px;height:14px;border:2px solid #4b5563;"
+                   f"background:#1e2130;border-radius:50%;margin-top:1px;")
+            lc, lw = "#4b5563", "400"
+        elif i == current:                         # 진행중 (링 + 글로우)
+            dot = (f"width:18px;height:18px;border:3px solid {c};"
+                   f"background:#1e2130;border-radius:50%;margin-top:-1px;"
+                   f"box-shadow:0 0 0 4px {c}33;")
+            lc, lw = c, "700"
+        else:                                      # 완료 (채움)
+            dot = f"width:16px;height:16px;background:{c};border-radius:50%;"
+            lc, lw = c, "600"
+
+        nodes += (
+            f"<div style='position:absolute;left:{pos:.1f}%;transform:translateX(-50%);"
+            f"display:flex;flex-direction:column;align-items:center;'>"
+            f"<div style='font-size:10px;font-weight:{lw};color:{lc};white-space:nowrap;"
+            f"text-align:center;height:32px;display:flex;align-items:flex-end;"
+            f"padding-bottom:6px;line-height:1.2;'>{name}</div>"
+            f"<div style='{dot}'></div>"
             f"</div>"
         )
-        if i < len(PIPELINE_STEPS) - 1:
-            arrow_col = "#16a34a" if i < current else "#cbd5e1"
-            bars.append(
-                f"<div style='display:flex;align-items:center;padding:0 2px;"
-                f"color:{arrow_col};font-size:18px'>→</div>"
-            )
+
     html = (
-        "<div style='display:flex;align-items:stretch;gap:0;"
-        "padding:12px 0 16px;'>" + "".join(bars) + "</div>"
+        "<div style='position:relative;padding:4px 3%;margin:10px 0 18px;'>"
+        "<div style='position:relative;height:58px;'>"
+        # 배경선
+        "<div style='position:absolute;top:44px;left:0;right:0;height:2px;"
+        "background:#2d3748;border-radius:1px;'></div>"
+        # 진행선
+        f"<div style='position:absolute;top:44px;left:0;width:{fill:.1f}%;height:2px;"
+        f"background:{gradient};border-radius:1px;transition:width .4s ease;'></div>"
+        + nodes +
+        "</div></div>"
     )
     placeholder.markdown(html, unsafe_allow_html=True)
 
@@ -114,7 +143,7 @@ def run_live_ingestion(prog_placeholder, log_area):
     urls = task["steps"][0]["inputs"]["urls"]
     bucket = os.getenv("S3_BUCKET")
     region = os.getenv("AWS_DEFAULT_REGION")
-    model_id = os.getenv("BEDROCK_MODEL_ID")
+    model_id = os.getenv("BEDROCK_MODEL_ID", "au.anthropic.claude-sonnet-4-6")
     bedrock = boto3.client("bedrock-runtime", region_name=region)
     s3 = boto3.client("s3", region_name=region)
 
@@ -309,28 +338,13 @@ with tab4:
     log_placeholder = st.empty()
 
     if not st.session_state.get("t4_started"):
+        # 대기 상태 진행 바 먼저 표시
+        _render_steps(prog_placeholder, -1)
+
         with log_placeholder.container():
             st.markdown("## ⚡ 실시간 Ingestion 파이프라인")
-            # Pipeline flow badges
             st.markdown(
-                "<div style='display:flex;align-items:center;gap:6px;flex-wrap:wrap;"
-                "margin:12px 0 20px;font-size:13px;'>"
-                "<span style='background:#dbeafe;color:#1e40af;padding:4px 12px;"
-                "border-radius:20px;font-weight:600'>MCP web_fetch</span>"
-                "<span style='color:#94a3b8;font-size:18px'>→</span>"
-                "<span style='background:#fef3c7;color:#92400e;padding:4px 12px;"
-                "border-radius:20px;font-weight:600'>Claude 메타데이터 추출</span>"
-                "<span style='color:#94a3b8;font-size:18px'>→</span>"
-                "<span style='background:#dcfce7;color:#166534;padding:4px 12px;"
-                "border-radius:20px;font-weight:600'>FAISS 인덱싱</span>"
-                "<span style='color:#94a3b8;font-size:18px'>→</span>"
-                "<span style='background:#f3e8ff;color:#6b21a8;padding:4px 12px;"
-                "border-radius:20px;font-weight:600'>Graph 빌드</span>"
-                "<span style='color:#94a3b8;font-size:18px'>→</span>"
-                "<span style='background:#fef9c3;color:#713f12;padding:4px 12px;"
-                "border-radius:20px;font-weight:600'>S3 저장</span>"
-                "</div>",
-                unsafe_allow_html=True,
+                "버튼을 누르면 위 파이프라인이 단계별로 진행되며 실시간 상태가 표시됩니다."
             )
             st.markdown("**수집 대상 문서**")
             import yaml as _yaml
